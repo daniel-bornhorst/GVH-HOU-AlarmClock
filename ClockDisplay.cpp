@@ -1,60 +1,42 @@
 #include "ClockDisplay.h"
 
+
+
 ClockDisplay::ClockDisplay() {
-	_matrix = Adafruit_7segment();
+
+  Wire.setClock(1000000);
 
   _frameIndex = 0;
   _currentAnimation = animation4;
 }
 
-ClockDisplay::ClockDisplay(int hours, int minutes) {
-  _hours = hours;
-  _minutes = minutes;
-}
-
 void ClockDisplay::begin() {
-  _matrix.begin(0x70);
+  // Setup display
+  _matrix.begin();
+  _matrix.displayOn();
+  _matrix.brightness(DEFAULT_BRIGHTNESS);
+  _matrix.displayClear();
+  _matrix.blink(0);
+  _matrix.cacheOn();
 }
 
 void ClockDisplay::loop() {
   _currentMillis = millis();
 
-  if (_currentMillis - _previousMillis > _currentAnimation[_frameIndex].holdTime ){//&& anmiationRepetitions < numRepeats) {
+  if (_currentAnimation == NULL) { return; }
+  if (_currentMillis - _previousMillis > _currentAnimation[_frameIndex].holdTime ){
 
-    _matrix.clear();
+    //_matrix.displayClear();
+    //random(0, 256)
 
-    for (int digitIndex = 0; digitIndex < 5; ++digitIndex) {
-      _matrix.writeDigitRaw(digitIndex, _currentAnimation[_frameIndex].digitMasks[digitIndex] & 0b01111111);
-      // if (anmiationRepetitions < 5) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256));
-      // }
-      // else if (anmiationRepetitions < 10) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256) & 0b11111110);
-      // }
-      // else if (anmiationRepetitions < 15) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256) & 0b11011100);
-      // }
-      // else if (anmiationRepetitions < 20) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256) & 0b10011100);
-      // }
-      // else if (anmiationRepetitions < 25) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256) & 0b10001000);
-      // }
-      // else if (anmiationRepetitions < 30) {
-      //   matrix.writeDigitRaw(digitIndex, random(0, 256) & 0b10000000);
-      // }
-    }
-    _matrix.setBrightness(_currentAnimation[_frameIndex].brightness);
-    _matrix.writeDisplay();
+    _matrix.displayRaw( _currentAnimation[_frameIndex].digitMasks, 
+                        _currentAnimation[_frameIndex].controlBits & DISPLAY_COLON);
 
-    // Serial.print("Frame: ");
-    // Serial.println(frameIndex);
+    _matrix.brightness(_currentAnimation[_frameIndex].brightness);
 
     if ( (_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0 ) { // if this is the last frame of the animation
       _frameIndex = 0;
       _anmiationRepetitions++;
-      // Serial.print("Repetitions: ");
-      // Serial.println(anmiationRepetitions);
     }
     else {
       _frameIndex++;

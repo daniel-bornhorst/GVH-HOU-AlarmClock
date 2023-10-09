@@ -5,16 +5,19 @@
 #include "ClockGlobals.h"
 #include "ClockDisplayAnimations.h"
 
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include "Adafruit_LEDBackpack.h"
+// #include <Wire.h>
+// #include <Adafruit_GFX.h>
+// #include "Adafruit_LEDBackpack.h"
+
+//#include "HT16K33.h"
+#include "HT16K33Driver.h"
+
 
 
 class ClockDisplay {
 public:
   // Constructors
   ClockDisplay(); // Default constructor
-  ClockDisplay(int hours, int minutes); // Parameterized constructor
 
   void begin();
   void loop();
@@ -31,7 +34,7 @@ public:
 
 private:
 
-  Adafruit_7segment _matrix;
+  HT16K33Driver _matrix;
   int _hours;
   int _minutes;
 
