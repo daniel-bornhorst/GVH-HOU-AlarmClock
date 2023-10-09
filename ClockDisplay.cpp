@@ -64,32 +64,44 @@ void ClockDisplay::loop() {
   }
 }
 
-void ClockDisplay::playSleepAnimation() {
+void ClockDisplay::playIdleAnimation() {
   _frameIndex = 0;
-  _currentAnimation = animation7;
-  Serial.println("sleep");
-}
-
-void ClockDisplay::playWakeAnimation() {
-  _frameIndex = 0;
-  _currentAnimation = animation2;
-  Serial.println("wake");
-}
-
-void ClockDisplay::playHourAnimation() {
-  _frameIndex = 0;
-  _currentAnimation = animation3;
-  Serial.println("houir");
-}
-
-void ClockDisplay::playMinuteAnimation() {
-  _frameIndex = 0;
+  _anmiationRepetitions = 0;
   _currentAnimation = animation4;
-  Serial.println("minute");
+  Serial.println("IDLE");
+}
+
+void ClockDisplay::playAtmAnimation() {
+  _frameIndex = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = animation7;
+  Serial.println("ATM");
+}
+
+void ClockDisplay::playVendeAnimation() {
+  _frameIndex = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = animation2;
+  Serial.println("VendE");
+}
+
+void ClockDisplay::playPianoAnimation() {
+  _frameIndex = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = animation3;
+  Serial.println("piano");
+}
+
+void ClockDisplay::playTurntableAnimation() {
+  _frameIndex = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = animation4;
+  Serial.println("turntable");
 }
 
 void ClockDisplay::playSnoozAnimation() {
   _frameIndex = 0;
+  _anmiationRepetitions = 0;
   _currentAnimation = animation6;
   Serial.println("snooz");
 }

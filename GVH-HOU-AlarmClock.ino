@@ -4,16 +4,23 @@
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
 
+// Peripheral Devies
 ClockDisplay display;
 ClockAudio audio;
 
+// State holders
 ClockState clockState = IDLE;
+ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
-Bounce atmButton = Bounce(ATM_BUTTON, 5);
-Bounce vendeButton = Bounce(VENDE_BUTTON, 5);  // 5 ms debounce time
-Bounce pianoButton = Bounce(PIANO_BUTTON, 5);
-Bounce turntableButton = Bounce(TURNTABLE_BUTTON, 5);
-Bounce snoozButton = Bounce(SNOOZ_BUTTON, 5);
+// Buttons
+Bounce atmButton = Bounce(ATM_BUTTON, 100);
+Bounce vendeButton = Bounce(VENDE_BUTTON, 100);  // 5 ms debounce time
+Bounce pianoButton = Bounce(PIANO_BUTTON, 100);
+Bounce turntableButton = Bounce(TURNTABLE_BUTTON, 100);
+Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
+
+// Timers
+elapsedMillis returnToIdleTimer;
 
 void setup() {
 
@@ -31,9 +38,12 @@ void setup() {
 
 void loop() {
 
+  // Update our peripheral classes
   display.loop();
   audio.loop();
 
+
+  // Check for button presses
   atmButton.update();
   vendeButton.update();
   pianoButton.update();
@@ -41,49 +51,48 @@ void loop() {
   snoozButton.update();
 
   if (atmButton.fallingEdge()) {
-    Serial.println("atm");
-    clockState = ATM;
-    display.playSleepAnimation();
+    buttonPressed(ATM_BUTTON);
   }
   else if (vendeButton.fallingEdge()) {
-    Serial.println("vende");
-    clockState = VENDE;
-    display.playWakeAnimation();
+    buttonPressed(VENDE_BUTTON);
   }
   else if (pianoButton.fallingEdge()) {
-    Serial.println("piano");
-    clockState = PIANO;
-    display.playHourAnimation();
+    buttonPressed(PIANO_BUTTON);
   }
   else if (turntableButton.fallingEdge()) {
-    Serial.println("turntable");
-    clockState = TURNTABLE;
-    display.playMinuteAnimation();
+    buttonPressed(TURNTABLE_BUTTON);
   }
   else if (snoozButton.fallingEdge()) {
-    Serial.println("snooz");
-    clockState = SNOOZ;
-    display.playSnoozAnimation();
+    buttonPressed(SNOOZ_BUTTON);
+  }
+
+
+  if (returnToIdleTimer >= 5000 && clockState != IDLE) {
+    clockState = IDLE;
+    display.playIdleAnimation();
   }
 
 }
 
-void buttonPress(ClockInput pressedButton) {
+void buttonPressed(ClockInput pressedButton) {
+  
+  returnToIdleTimer = 0;
+
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;
-    display.playSleepAnimation();
+    display.playAtmAnimation();
   }
   else if (pressedButton == VENDE_BUTTON) {
     clockState = VENDE;
-    display.playWakeAnimation();
+    display.playVendeAnimation();
   }
   else if (pressedButton == PIANO_BUTTON) {
     clockState = PIANO;
-    display.playHourAnimation();
+    display.playPianoAnimation();
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
-    display.playMinuteAnimation();
+    display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;

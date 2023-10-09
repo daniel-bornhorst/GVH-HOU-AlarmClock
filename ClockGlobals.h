@@ -12,8 +12,8 @@ typedef enum ClockState
   ACTUAL_TIME
 } clock_state_;
 
-// Represents the buttons on the clock
-// the values are the teensy pins connected the button
+// Represents the available user inputs on the clock
+// the values are the teensy pins connected the input
 typedef enum ClockInput
 {
   ATM_BUTTON = 33,
@@ -22,7 +22,16 @@ typedef enum ClockInput
   TURNTABLE_BUTTON = 36,
   SNOOZ_BUTTON = 37,
   MODE_SWITCH = 38,
-  TUNING_POT = A2,
+  TUNING_POT = A2
 } clock_input_;
+
+// Represents the different states of the four way toggle
+typedef enum ToggleSwitchState
+{
+  ON_SWITCH_STATE,
+  OFF_SWITCH_STATE,
+  MUSIC_SWITCH_STATE,
+  ALARM_SWITCH_STATE
+} toggle_switch_state_;
 
 #endif

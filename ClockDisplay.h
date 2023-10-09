@@ -19,10 +19,11 @@ public:
   void begin();
   void loop();
 
-  void playSleepAnimation();
-  void playWakeAnimation();
-  void playHourAnimation();
-  void playMinuteAnimation();
+  void playIdleAnimation();
+  void playAtmAnimation();
+  void playVendeAnimation();
+  void playPianoAnimation();
+  void playTurntableAnimation();
   void playSnoozAnimation();
 
   // Member functions
