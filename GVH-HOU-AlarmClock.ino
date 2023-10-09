@@ -31,6 +31,7 @@ void setup() {
   pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
   display.begin();
+  display.playIdleAnimation();
 
   Serial.begin(9600);
   delay(1000);
@@ -66,7 +67,7 @@ void loop() {
     buttonPressed(SNOOZ_BUTTON);
   }
 
-
+  // Return to IDLE mode timeout
   if (returnToIdleTimer >= 5000 && clockState != IDLE) {
     clockState = IDLE;
     display.playIdleAnimation();

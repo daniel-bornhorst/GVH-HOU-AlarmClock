@@ -4,7 +4,7 @@ ClockDisplay::ClockDisplay() {
 	_matrix = Adafruit_7segment();
 
   _frameIndex = 0;
-  _currentAnimation = animation7;
+  _currentAnimation = animation4;
 }
 
 ClockDisplay::ClockDisplay(int hours, int minutes) {
@@ -95,7 +95,7 @@ void ClockDisplay::playPianoAnimation() {
 void ClockDisplay::playTurntableAnimation() {
   _frameIndex = 0;
   _anmiationRepetitions = 0;
-  _currentAnimation = animation4;
+  _currentAnimation = animation5;
   Serial.println("turntable");
 }
 
