@@ -79,11 +79,11 @@ void ClockDisplay::scrollStringBuffer() {
 
     _matrix.displayChars(shitBuff);
     Serial.println(_stringScrollIndex);
-    if (_stringScrollIndex < stringBuffer.length()) {
-      _stringScrollIndex++;
+    if (_stringScrollIndex >= stringBuffer.length()) {
+      _stringScrollIndex = 0;
     }
     else {
-      _stringScrollIndex = 0;
+      _stringScrollIndex++;
     }
     _frameTimer = 0;
   }
@@ -133,10 +133,11 @@ void ClockDisplay::playPianoAnimation() {
 void ClockDisplay::playTurntableAnimation() {
   _scriptedAnimation = true;
   _frameIndex = 0;
-  _frameTimer = 0;
+  _frameTimer = _scrollStepRate;
   _anmiationRepetitions = 0;
   _currentAnimation = NULL;
   _scrollStringBuffer = true;
+  _stringScrollIndex = 0;
 
   Serial.println("turntable");
 }

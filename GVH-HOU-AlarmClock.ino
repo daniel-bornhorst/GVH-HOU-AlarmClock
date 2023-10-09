@@ -68,10 +68,10 @@ void loop() {
   }
 
   // Return to IDLE mode timeout
-  if (idleTimeout >= 5000 && clockState != IDLE) {
-    clockState = IDLE;
-    display.playIdleAnimation();
-  }
+  // if (idleTimeout >= 10000 && clockState != IDLE) {
+  //   clockState = IDLE;
+  //   display.playIdleAnimation();
+  // }
 
 }
 
