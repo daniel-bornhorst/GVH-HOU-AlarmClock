@@ -91,6 +91,7 @@ public:
 
 
   void    display(uint8_t *array);                  //  array with 4 elements
+  void    displayChars(char *array);
   void    display(uint8_t *array, uint8_t point);   //  point = digit with . (0..3)
   void    displayColon(uint8_t on);                 //  0 = off
   void    displayRaw(uint8_t *array, bool colon = false);  //  max control
@@ -130,6 +131,8 @@ public:
   //  use setDigits(); instead.
   //  0 = off, 1,2,3,4 digits  space instead of 0
   void suppressLeadingZeroPlaces(uint8_t value);
+
+  uint8_t getBinaryChar(uint8_t character);
 
 
 private:

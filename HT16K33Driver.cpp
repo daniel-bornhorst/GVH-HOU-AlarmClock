@@ -30,15 +30,20 @@
 //  xxxx    =  0000 .. 1111 (0 - F)
 #define HT16K33_BRIGHTNESS      0xE0
 
-
 //
 //  HEX codes 7 segment
 //
-//      01
-//  20      02
-//      40
-//  10      04
-//      08
+//          01
+//      ---------
+//     /         /
+//  20 /         / 02
+//     /         /
+//     /--- 40 --/
+//     /         /
+//  10 /         / 04
+//     /         /
+//      ---------
+//         08
 //
 static const uint8_t charmap[] = {  //  TODO PROGMEM = slower?
 
@@ -542,6 +547,23 @@ void HT16K33Driver::display(uint8_t *array)
   //  dumpSerial(array, 0);
 }
 
+void HT16K33Driver::displayChars(char *array)
+{
+  for (uint8_t i = 0; i < (4 - _digits); i++)
+  {
+    if (array[i] != 0) break;
+    array[i] = HT16K33_SPACE;
+  }
+  writePos(0, getBinaryChar(array[0]));
+  writePos(1, getBinaryChar(array[1]));
+  writePos(2, 0); // no colon
+  writePos(3, getBinaryChar(array[2]));
+  writePos(4, getBinaryChar(array[3]));
+
+  //  debug to Serial
+  //  dumpSerial(array, 0);
+}
+
 
 void HT16K33Driver::display(uint8_t *array, uint8_t point)
 {
@@ -554,6 +576,7 @@ void HT16K33Driver::display(uint8_t *array, uint8_t point)
   writePos(3, charmap[array[2]], point == 2);
   writePos(4, charmap[array[3]], point == 3);
 }
+
 
 
 void HT16K33Driver::displayColon(uint8_t on)
@@ -652,6 +675,131 @@ void HT16K33Driver::writePos(uint8_t pos, uint8_t mask, bool point)
   if (point) mask |= 0x80;
   else mask &= 0x7F;
   writePos(pos, mask);
+}
+
+uint8_t HT16K33Driver::getBinaryChar(uint8_t character)
+{
+
+  switch(character) {
+    case 'a':
+      return 0b01011111;
+    case 'A':
+      return 0b01110111;
+    case 'b':
+    case 'B':
+      return 0b01111100;
+    case 'c':
+      return 0b01011000;
+    case 'C':
+      return 0b00111001;
+    case 'd':
+    case 'D':
+      return 0b01011110;
+    case 'e':
+    case 'E':
+      return 0b01111001;
+    case 'f':
+    case 'F':
+      return 0b01110001;
+    case 'g':
+    case 'G':
+      return 0b00111101;
+    case 'h':
+      return 0b01110100;
+    case 'H':
+      return 0b01110110;
+    case 'i':
+      return 0b00000100;
+    case 'I':
+      return 0b00000110;
+    case 'j':
+    case 'J':
+      return 0b00011110;
+    case 'k':
+    case 'K':
+      return 0b01110101;
+    case 'l':
+      return 0b00000110;
+    case 'L':
+      return 0b00111000;
+    case 'm':
+    case 'M':
+      return 0b01010110;
+    case 'n':
+      return 0b01010100;
+    case 'N':
+      return 0b00110111;
+    case 'o':
+      return 0b01011100;
+    case 'O':
+      return 0b00111111;
+    case 'p':
+    case 'P':
+      return 0b01110011;
+    case 'q':
+    case 'Q':
+      return 0b01100111;
+    case 'r':
+    case 'R':
+      return 0b01010000;
+    case 's':
+    case 'S':
+      return 0b01101101;
+    case 't':
+    case 'T':
+      return 0b01111000;
+    case 'u':
+      return 0b00011100;
+    case 'U':
+    case 'v':
+    case 'V':
+      return 0b00111110;
+    case 'w':
+    case 'W':
+      return 0b01111110;
+    case 'x':
+    case 'X':
+      return 0b01110110;
+    case 'y':
+    case 'Y':
+      return 0b01101110;
+    case 'z':
+    case 'Z':
+      return 0b01011011;
+      
+    case '0':
+      return 0b00111111;
+    case '1':
+      return 0b00000110;
+    case '2':
+      return 0b01011011;
+    case '3':
+      return 0b01001111;
+    case '4':
+      return 0b01100110;
+    case '5':
+      return 0b01101101;
+    case '6':
+      return 0b01111101;
+    case '7':
+      return 0b00000111;
+    case '8':
+      return 0b01111111;
+    case '9':
+      return 0b01100111;
+    case ' ':
+      return 0b00000000;
+    case '!':
+      return 0b10000110;
+    case '-':
+      return 0b01000000;
+    case '_':
+      return 0b00001000;
+    case '.':
+      return 0b10000000;
+  }
+
+  return 0;
 }
 
 

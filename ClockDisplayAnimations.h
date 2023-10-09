@@ -15,6 +15,31 @@ typedef struct {
   uint8_t controlBits;
 } animationFrame;
 
+// Description:
+//
+//  HEX codes 7 segment
+//
+//          01
+//      ---------
+//     /         /
+//  20 /         / 02
+//     /         /
+//     /--- 40 --/
+//     /         /
+//  10 /         / 04
+//     /         /
+//      ---------
+//         08
+//
+// When RANDOMIZE_DISPLAY is enabled for a frame, all four digits are randomized and &'d with the digitMask (bitwise).
+//  This way we can control which segments are being randomized.
+//
+// Template
+// All Off
+//{ { 0b00000000, 0b00000000, 0b00000000, 0b00000000 }, defaultHoldTime, DEFAULT_BRIGHTNESS,  LAST_FRAME | DISPLAY_COLON | RANDOMIZE_DISPLAY},
+// All On
+//{ { 0b11111111, 0b11111111, 0b11111111, 0b11111111 }, defaultHoldTime, DEFAULT_BRIGHTNESS,  LAST_FRAME | DISPLAY_COLON | RANDOMIZE_DISPLAY},
+
 // One segment circles around the whole display
 const animationFrame animation1[6] = {
   { { 0b00000001, 0b00000000, 0b00000000, 0b00001000 }, defaultHoldTime, DEFAULT_BRIGHTNESS, 0 },
@@ -23,15 +48,8 @@ const animationFrame animation1[6] = {
   { { 0b00001000, 0b00000000, 0b00000000, 0b00000001 }, defaultHoldTime, DEFAULT_BRIGHTNESS, 0 },
   { { 0b00010000, 0b00000000, 0b00000000, 0b00000010 }, defaultHoldTime, DEFAULT_BRIGHTNESS, 0 },
   { { 0b00100000, 0b00000000, 0b00000000, 0b00000100 }, defaultHoldTime, DEFAULT_BRIGHTNESS, LAST_FRAME }
-  // { { 0b00000001, 0b00000000, 0b00000000, 0b00001000 }, defaultHoldTime },
-  // { { 0b00000000, 0b00000001, 0b00001000, 0b00000000 }, defaultHoldTime },  // 2 is the colon
-  // { { 0b00000000, 0b00001000, 0b00000001, 0b00000000 }, defaultHoldTime },
-  // { { 0b00001000, 0b00000000, 0b00000000, 0b00000001 }, defaultHoldTime },
-  // { { 0b00010000, 0b00000000, 0b00000000, 0b00000010 }, defaultHoldTime },
-  // { { 0b00100000, 0b00000000, 0b00000000, 0b00000100 }, defaultHoldTime }
 };
 
-//{ { 0b00000000, 0b00000000, 0, 0b00000000, 0b00000000 }, defaultHoldTime, DEFAULT_BRIGHTNESS },
 const animationFrame animation2[8] = {
   { { 0b00000001, 0b00000000, 0b00000000, 0b00001000 }, defaultHoldTime, 1, 0 },
   { { 0b00000000, 0b00000001, 0b00001000, 0b00000000 }, defaultHoldTime, 3, 0 },
@@ -159,9 +177,11 @@ const animationFrame animation8[12] = {
   { { 0b00000000, 0b00000000, 0b00000000, 0b00001000 }, 5, DEFAULT_BRIGHTNESS, LAST_FRAME }
 };
 
-const animationFrame animation9[1] = { 
-  { { 0b00000000, 0b00000000, 0b00000000, 0b00000000 }, 30, DEFAULT_BRIGHTNESS, LAST_FRAME | RANDOMIZE_DISPLAY },
+const animationFrame animation9[2] = {
+  { { 0b00000000, 0b00000111, 0b00111111, 0b01111101 }, defaultHoldTime, 9, DISPLAY_COLON},
+  { { 0b00000000, 0b00000111, 0b00111111, 0b01111101 }, defaultHoldTime, 2, LAST_FRAME | DISPLAY_COLON | RANDOMIZE_DISPLAY}
 };
+
 
 
 #endif

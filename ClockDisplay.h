@@ -18,6 +18,7 @@ class ClockDisplay {
 public:
   // Constructors
   ClockDisplay(); // Default constructor
+  String stringBuffer;
 
   void begin();
   void loop();
@@ -41,9 +42,12 @@ private:
   int _minutes;
 
   uint8_t _displayBuffer[4];
+  //String _stringBuffer;
+  uint8_t _stringScrollIndex;
 
   // This variable specifies whether or not the current animation is scripted or programatic
   bool _scriptedAnimation;
+  bool _scrollStringBuffer;
 
   // Variables for scripted behavior 
   const animationFrame* _currentAnimation;
@@ -52,8 +56,10 @@ private:
 
   // Variables for programatic behavior
   int _refreshRate;
+  unsigned long _scrollStepRate;
 
-  void randomizeDisplayBuffer();
+  void scrollStringBuffer();
+  void randomizeDisplayBuffer(const uint8_t* frame);
   void loadDisplayBuffer(const uint8_t* frame);
 
 };

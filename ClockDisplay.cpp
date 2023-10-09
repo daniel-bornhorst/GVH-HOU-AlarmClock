@@ -7,10 +7,12 @@ ClockDisplay::ClockDisplay() {
   Wire.setClock(1000000);
 
   _frameTimer = 0;
+  _scrollStringBuffer = false;
 
   _frameIndex = 0;
   _currentAnimation = animation4;
   _scriptedAnimation = true;
+  _scrollStepRate = 250;
 }
 
 void ClockDisplay::begin() {
@@ -23,15 +25,27 @@ void ClockDisplay::begin() {
   _matrix.cacheOn();
 
   _frameTimer = 0;
+  _stringScrollIndex = 0;
+  _scrollStringBuffer = false;
 }
 
 void ClockDisplay::loop() {
 
-  if (_frameTimer > _currentAnimation[_frameIndex].holdTime && _currentAnimation != NULL) {
+  if (_scrollStringBuffer) {
+    scrollStringBuffer();
+    return;
+  }
+
+
+  if (_currentAnimation == NULL) { return; }
+
+
+
+  if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
 
     // Check for digit randomization mask
     if (_currentAnimation[_frameIndex].controlBits & RANDOMIZE_DISPLAY) {
-      randomizeDisplayBuffer();
+      randomizeDisplayBuffer(_currentAnimation[_frameIndex].digitMasks);
     }
     else {
       loadDisplayBuffer(_currentAnimation[_frameIndex].digitMasks);
@@ -54,12 +68,35 @@ void ClockDisplay::loop() {
   }
 }
 
+void ClockDisplay::scrollStringBuffer() {
+
+  if (_frameTimer > _scrollStepRate) {
+
+    char shitBuff[stringBuffer.length()];
+
+    String subShit = stringBuffer.substring(_stringScrollIndex);
+    subShit.toCharArray(shitBuff, stringBuffer.length());
+
+    _matrix.displayChars(shitBuff);
+    Serial.println(_stringScrollIndex);
+    if (_stringScrollIndex < stringBuffer.length()) {
+      _stringScrollIndex++;
+    }
+    else {
+      _stringScrollIndex = 0;
+    }
+    _frameTimer = 0;
+  }
+
+}
+
 void ClockDisplay::playIdleAnimation() {
   _currentAnimation = animation4;
   _scriptedAnimation = true;
   _frameIndex = 0;
   _frameTimer = _currentAnimation[0].holdTime; // Jump straight into the IDLE animation (dont wait for the first frame timeout time)
   _anmiationRepetitions = 0;
+  _scrollStringBuffer = false;
   Serial.println("IDLE");
 }
 
@@ -68,6 +105,7 @@ void ClockDisplay::playAtmAnimation() {
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
+  _scrollStringBuffer = false;
   _currentAnimation = animation7;
   Serial.println("ATM");
 }
@@ -77,6 +115,7 @@ void ClockDisplay::playVendeAnimation() {
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
+  _scrollStringBuffer = false;
   _currentAnimation = animation2;
   Serial.println("VendE");
 }
@@ -86,6 +125,7 @@ void ClockDisplay::playPianoAnimation() {
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
+  _scrollStringBuffer = false;
   _currentAnimation = animation3;
   Serial.println("piano");
 }
@@ -95,7 +135,9 @@ void ClockDisplay::playTurntableAnimation() {
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
-  _currentAnimation = animation6;
+  _currentAnimation = NULL;
+  _scrollStringBuffer = true;
+
   Serial.println("turntable");
 }
 
@@ -104,6 +146,7 @@ void ClockDisplay::playSnoozAnimation() {
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
+  _scrollStringBuffer = false;
   _currentAnimation = animation6;
   Serial.println("snooz");
 }
@@ -114,9 +157,9 @@ void ClockDisplay::setClock(int hours, int minutes) {
   _minutes = minutes;
 }
 
-void ClockDisplay::randomizeDisplayBuffer() {
+void ClockDisplay::randomizeDisplayBuffer(const uint8_t* frame) {
   for (int i = 0; i < 4; ++i) {
-    _displayBuffer[i] = random(0, 256);
+    _displayBuffer[i] = random(0, 256) | frame[i];
   }
 }
 

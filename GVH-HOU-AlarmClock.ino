@@ -93,6 +93,7 @@ void buttonPressed(ClockInput pressedButton) {
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
+    display.stringBuffer = "JArEd SUCkS SHIt";
     display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {
