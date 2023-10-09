@@ -6,6 +6,7 @@
 #define DEFAULT_BRIGHTNESS 15
 #define DISPLAY_COLON 0b01000000
 #define LAST_FRAME 0b10000000
+#define RANDOMIZE_DISPLAY 0b00000001
 
 typedef struct {
   uint8_t digitMasks[4];      // Segment index 2 is the colon ':' on this display
@@ -134,8 +135,8 @@ const animationFrame animation5[48] = {
 };
 
 const animationFrame animation6[2] = {
-  { { 0b00000000, 0b00000111, 0b00111111, 0b01111101 }, defaultHoldTime, 9, DISPLAY_COLON },
-  { { 0b01111111, 0b01111000, 0b01000000, 0b00000010 }, defaultHoldTime, 2, LAST_FRAME | DISPLAY_COLON }
+  { { 0b00000000, 0b00000111, 0b00111111, 0b01111101 }, defaultHoldTime, 9, DISPLAY_COLON},
+  { { 0b01111111, 0b01111000, 0b01000000, 0b00000010 }, defaultHoldTime, 2, LAST_FRAME | DISPLAY_COLON | RANDOMIZE_DISPLAY}
 };
 
 const animationFrame animation7[12] = { 
@@ -156,6 +157,10 @@ const animationFrame animation7[12] = {
 const animationFrame animation8[12] = { 
   { { 0b00111001, 0b00000000, 0b00000000, 0b00000000 }, 5, DEFAULT_BRIGHTNESS, 0 },
   { { 0b00000000, 0b00000000, 0b00000000, 0b00001000 }, 5, DEFAULT_BRIGHTNESS, LAST_FRAME }
+};
+
+const animationFrame animation9[1] = { 
+  { { 0b00000000, 0b00000000, 0b00000000, 0b00000000 }, 30, DEFAULT_BRIGHTNESS, LAST_FRAME | RANDOMIZE_DISPLAY },
 };
 
 

@@ -20,7 +20,7 @@ Bounce turntableButton = Bounce(TURNTABLE_BUTTON, 100);
 Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
 
 // Timers
-elapsedMillis returnToIdleTimer;
+elapsedMillis idleTimeout;
 
 void setup() {
 
@@ -68,7 +68,7 @@ void loop() {
   }
 
   // Return to IDLE mode timeout
-  if (returnToIdleTimer >= 5000 && clockState != IDLE) {
+  if (idleTimeout >= 5000 && clockState != IDLE) {
     clockState = IDLE;
     display.playIdleAnimation();
   }
@@ -77,7 +77,7 @@ void loop() {
 
 void buttonPressed(ClockInput pressedButton) {
   
-  returnToIdleTimer = 0;
+  idleTimeout = 0;
 
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;

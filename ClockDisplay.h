@@ -35,17 +35,26 @@ public:
 private:
 
   HT16K33Driver _matrix;
+  elapsedMillis _frameTimer;
+
   int _hours;
   int _minutes;
 
-  unsigned long _currentMillis = 0;
-  unsigned long _previousMillis = 0;
+  uint8_t _displayBuffer[4];
+
+  // This variable specifies whether or not the current animation is scripted or programatic
+  bool _scriptedAnimation;
+
+  // Variables for scripted behavior 
+  const animationFrame* _currentAnimation;
   int _frameIndex;
   int _anmiationRepetitions = 0;
-  int _numRepeats = 3;
 
-  const animationFrame* _currentAnimation;
-  unsigned long _currentFrameHoldTimeMillis = 0;
+  // Variables for programatic behavior
+  int _refreshRate;
+
+  void randomizeDisplayBuffer();
+  void loadDisplayBuffer(const uint8_t* frame);
 
 };
 
