@@ -68,10 +68,10 @@ void loop() {
   }
 
   // Return to IDLE mode timeout
-  // if (idleTimeout >= 10000 && clockState != IDLE) {
-  //   clockState = IDLE;
-  //   display.playIdleAnimation();
-  // }
+  if (idleTimeout >= 10000 && clockState != IDLE) {
+    clockState = IDLE;
+    display.playIdleAnimation();
+  }
 
 }
 
@@ -93,7 +93,7 @@ void buttonPressed(ClockInput pressedButton) {
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
-    display.stringBuffer = "JArEd SUCkS SHIt";
+    display.stringBuffer = "    Gordon SuckS SHIt";
     display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {

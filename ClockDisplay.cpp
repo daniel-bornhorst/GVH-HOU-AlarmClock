@@ -133,10 +133,15 @@ void ClockDisplay::playPianoAnimation() {
 void ClockDisplay::playTurntableAnimation() {
   _scriptedAnimation = true;
   _frameIndex = 0;
-  _frameTimer = _scrollStepRate;
   _anmiationRepetitions = 0;
-  _currentAnimation = NULL;
-  _scrollStringBuffer = true;
+ 
+  _frameTimer = 0;
+  _currentAnimation = animation9;
+  _scrollStringBuffer = false;
+  // _frameTimer = _scrollStepRate;
+  // _currentAnimation = NULL;
+  // _scrollStringBuffer = true;
+  
   _stringScrollIndex = 0;
 
   Serial.println("turntable");
