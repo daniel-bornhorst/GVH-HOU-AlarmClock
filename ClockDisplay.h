@@ -20,7 +20,7 @@ public:
   ClockDisplay(); // Default constructor
   String stringBuffer;
 
-  void begin();
+  void setup();
   void loop();
 
   void playIdleAnimation();

@@ -74,10 +74,9 @@ static const uint8_t charmap[] = {  //  TODO PROGMEM = slower?
 //
 //  CONSTRUCTOR
 //
-HT16K33Driver::HT16K33Driver(const uint8_t address, TwoWire *wire)
+HT16K33Driver::HT16K33Driver(const uint8_t address)
 {
   _address = address;
-  _wire = wire;
 }
 
 
@@ -86,9 +85,9 @@ bool HT16K33Driver::begin(uint8_t sda, uint8_t scl)
 {
   if ((sda < 255) && (scl < 255))
   {
-    _wire->begin(sda, scl);
+    begin(sda, scl);
   } else {
-    _wire->begin();
+    begin();
   }
   if (! isConnected()) return false;
   reset();
@@ -99,7 +98,7 @@ bool HT16K33Driver::begin(uint8_t sda, uint8_t scl)
 
 bool HT16K33Driver::begin()
 {
-  _wire->begin();
+  master.begin(master_frequency);
   if (! isConnected()) return false;
   reset();
   return true;
@@ -107,8 +106,8 @@ bool HT16K33Driver::begin()
 
 bool HT16K33Driver::isConnected()
 {
-  _wire->beginTransmission(_address);
-  return (0 == _wire->endTransmission());
+  beginTransmission(_address);
+  return (0 == endTransmission());
 }
 
 
@@ -644,28 +643,28 @@ void HT16K33Driver::_refresh()
 {
   for (uint8_t pos = 0; pos < 4; pos++)
   {
-    _wire->beginTransmission(_address);
-    _wire->write(pos * 2);
-    _wire->write(_displayCache[pos]);
-    _wire->endTransmission();
+    beginTransmission(_address);
+    write(pos * 2);
+    write(_displayCache[pos]);
+    endTransmission();
   }
 }
 
 void HT16K33Driver::writeCmd(uint8_t cmd)
 {
-  _wire->beginTransmission(_address);
-  _wire->write(cmd);
-  _wire->endTransmission();
+  beginTransmission(_address);
+  write(cmd);
+  endTransmission();
 }
 
 
 void HT16K33Driver::writePos(uint8_t pos, uint8_t mask)
 {
   if (_cache && (_displayCache[pos] == mask)) return;
-  _wire->beginTransmission(_address);
-  _wire->write(pos * 2);
-  _wire->write(mask);
-  _wire->endTransmission();
+  beginTransmission(_address);
+  write(pos * 2);
+  write(mask);
+  endTransmission();
   _displayCache[pos] = _cache ? mask : HT16K33_NONE;
 }
 
@@ -802,5 +801,33 @@ uint8_t HT16K33Driver::getBinaryChar(uint8_t character)
   return 0;
 }
 
+void HT16K33Driver::beginTransmission(int address) {
+    write_address = (uint8_t)address;
+    tx_next_byte_to_write = 0;
+}
+
+size_t HT16K33Driver::write(uint8_t data) {
+    if (tx_next_byte_to_write < tx_buffer_length) {
+        tx_buffer[tx_next_byte_to_write++] = data;
+        return 1;
+    }
+    return 0;
+}
+
+uint8_t HT16K33Driver::endTransmission(int stop) {
+    master.write_async(write_address, tx_buffer, tx_next_byte_to_write, stop);
+    finish();
+    return 0;
+}
+
+void HT16K33Driver::finish() {
+    elapsedMillis timeout;
+    while (timeout < timeout_millis) {
+        if (master.finished()) {
+            return;
+        }
+    }
+    Serial.println("Timed out waiting for transfer to finish.");
+}
 
 //  -- END OF FILE --

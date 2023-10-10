@@ -1,12 +1,34 @@
 #include <Bounce.h>
 
-#include "ClockAudio.h"
+//#include "ClockAudio.h"
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
 
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
+#include "AudioSampleCashregister.h"
+#include "AudioSampleSinsweep.h"
+
+#define SDCARD_CS_PIN    BUILTIN_SDCARD
+#define SDCARD_MOSI_PIN  11  // not actually used
+#define SDCARD_SCK_PIN   13  // not actually used
+
+AudioPlaySdWav playWav1;
+AudioPlayMemory sound0;
+AudioMixer4 mix1;
+AudioOutputI2S2 headphones;
+AudioConnection c1(playWav1, 0, mix1, 0);
+AudioConnection c2(sound0, 0, mix1, 1);
+AudioConnection c3(mix1, 0, headphones, 0);
+AudioConnection c4(mix1, 0, headphones, 1);
+
 // Peripheral Devies
 ClockDisplay display;
-ClockAudio audio;
+//ClockAudio audio;
 
 // State holders
 ClockState clockState = IDLE;
@@ -24,14 +46,31 @@ elapsedMillis idleTimeout;
 
 void setup() {
 
+  AudioMemory(10);
+
   pinMode(ATM_BUTTON, INPUT_PULLUP);
   pinMode(VENDE_BUTTON, INPUT_PULLUP);
   pinMode(PIANO_BUTTON, INPUT_PULLUP);
   pinMode(TURNTABLE_BUTTON, INPUT_PULLUP);
   pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
-  display.begin();
+  display.setup();
   display.playIdleAnimation();
+
+  SPI.setMOSI(SDCARD_MOSI_PIN);
+  SPI.setSCK(SDCARD_SCK_PIN);
+  if (!(SD.begin(SDCARD_CS_PIN))) {
+    // stop here, but print a message repetitively
+    while (1) {
+      Serial.println("Unable to access the SD card");
+      delay(500);
+    }
+  }
+
+  mix1.gain(0, 0.4);
+  mix1.gain(1, 0.4);
+
+  //audio.setup();
 
   Serial.begin(9600);
   delay(1000);
@@ -41,7 +80,7 @@ void loop() {
 
   // Update our peripheral classes
   display.loop();
-  audio.loop();
+  //audio.loop();
 
 
   // Check for button presses
@@ -68,7 +107,7 @@ void loop() {
   }
 
   // Return to IDLE mode timeout
-  if (idleTimeout >= 10000 && clockState != IDLE) {
+  if (idleTimeout >= 5000 && clockState != IDLE) {
     clockState = IDLE;
     display.playIdleAnimation();
   }
@@ -81,23 +120,28 @@ void buttonPressed(ClockInput pressedButton) {
 
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;
+    playWav1.play("DJENT1.WAV");
     display.playAtmAnimation();
   }
   else if (pressedButton == VENDE_BUTTON) {
     clockState = VENDE;
+    sound0.play(AudioSampleSinsweep);
     display.playVendeAnimation();
   }
   else if (pressedButton == PIANO_BUTTON) {
     clockState = PIANO;
+    playWav1.play("ALARM2.WAV");
     display.playPianoAnimation();
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
     display.stringBuffer = "    Gordon SuckS SHIt";
+    playWav1.play("ALARM1.WAV");
     display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
+    playWav1.play("SINSWEEP.WAV");
     display.playSnoozAnimation();
   }
 }

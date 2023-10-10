@@ -10,7 +10,8 @@
 
 
 #include "Arduino.h"
-#include "i2c_driver_wire.h"
+//#include "i2c_driver_wire.h"
+#include <i2c_device.h>
 
 
 #define HT16K33_LIB_VERSION         (F("0.3.9"))
@@ -43,7 +44,7 @@
 class HT16K33Driver
 {
 public:
-  HT16K33Driver(const uint8_t address = 0x70, TwoWire *wire = &Wire);   //  0x70 .. 0x77
+  HT16K33Driver(const uint8_t address = 0x70);   //  0x70 .. 0x77
 
 #if defined (ESP8266) || defined(ESP32)
   bool    begin(uint8_t sda, uint8_t scl);
@@ -141,13 +142,27 @@ private:
   void    writePos(uint8_t pos, uint8_t mask);
   void    writePos(uint8_t pos, uint8_t mask, bool point);
 
+  void begin(uint8_t address);
+  void end();
+  void beginTransmission(int address);
+  size_t write(uint8_t data);
+  uint8_t endTransmission(int stop = true);
+  void finish();
+
+  I2CMaster& master = Master;
+  uint8_t write_address = 0;
+  size_t tx_next_byte_to_write = 0;
+  static const uint32_t timeout_millis = 200;
+  static const size_t tx_buffer_length = 32;
+  uint32_t master_frequency = 1000 * 1000U;
+  uint8_t tx_buffer[tx_buffer_length] = {};
+
   uint8_t _address;
   uint8_t _displayCache[5];                 //  for performance
   bool    _cache = true;
   uint8_t _digits = 0;
   uint8_t _bright;
 
-  TwoWire*  _wire;
 };
 
 

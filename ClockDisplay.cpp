@@ -4,8 +4,6 @@
 
 ClockDisplay::ClockDisplay() {
 
-  Wire.setClock(1000000);
-
   _frameTimer = 0;
   _scrollStringBuffer = false;
 
@@ -15,7 +13,7 @@ ClockDisplay::ClockDisplay() {
   _scrollStepRate = 250;
 }
 
-void ClockDisplay::begin() {
+void ClockDisplay::setup() {
   // Setup display
   _matrix.begin();
   _matrix.displayOn();
