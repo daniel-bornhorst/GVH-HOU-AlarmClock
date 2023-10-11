@@ -2,7 +2,7 @@
 #ifndef DisplayAnimations_h
 #define DisplayAnimations_h
 
-#define defaultHoldTime 20
+#define defaultHoldTime 100
 #define DEFAULT_BRIGHTNESS 15
 #define DISPLAY_COLON 0b01000000
 #define LAST_FRAME 0b10000000

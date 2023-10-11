@@ -10,7 +10,6 @@
 
 
 #include "Arduino.h"
-//#include "i2c_driver_wire.h"
 #include <i2c_device.h>
 
 
@@ -154,7 +153,7 @@ private:
   size_t tx_next_byte_to_write = 0;
   static const uint32_t timeout_millis = 200;
   static const size_t tx_buffer_length = 32;
-  uint32_t master_frequency = 1000 * 1000U;
+  uint32_t master_frequency = 100 * 1000U;
   uint8_t tx_buffer[tx_buffer_length] = {};
 
   uint8_t _address;

@@ -5,11 +5,9 @@
 ClockDisplay::ClockDisplay() {
 
   _frameTimer = 0;
-  _scrollStringBuffer = false;
 
   _frameIndex = 0;
   _currentAnimation = animation4;
-  _scriptedAnimation = true;
   _scrollStepRate = 250;
 }
 
@@ -24,20 +22,28 @@ void ClockDisplay::setup() {
 
   _frameTimer = 0;
   _stringScrollIndex = 0;
-  _scrollStringBuffer = false;
 }
 
 void ClockDisplay::loop() {
 
-  if (_scrollStringBuffer) {
-    scrollStringBuffer();
-    return;
+  switch (_displayState) {
+    case DISPLAY_OFF:
+      return;
+    case SCRIPTED_ANIMATION:
+      playScriptedAnimation();
+      break;
+    case BUFFER_SCROLL:
+      scrollStringBuffer();
+      break;
+    case VU_METER:
+      //setVuMeter();
+      break;
   }
+}
 
+void ClockDisplay::playScriptedAnimation() {
 
   if (_currentAnimation == NULL) { return; }
-
-
 
   if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
 
@@ -89,70 +95,66 @@ void ClockDisplay::scrollStringBuffer() {
 }
 
 void ClockDisplay::playIdleAnimation() {
-  _currentAnimation = animation4;
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
   _frameTimer = _currentAnimation[0].holdTime; // Jump straight into the IDLE animation (dont wait for the first frame timeout time)
   _anmiationRepetitions = 0;
-  _scrollStringBuffer = false;
+  _currentAnimation = animation4;
   Serial.println("IDLE");
 }
 
 void ClockDisplay::playAtmAnimation() {
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
-  _scrollStringBuffer = false;
   _currentAnimation = animation7;
   Serial.println("ATM");
 }
 
 void ClockDisplay::playVendeAnimation() {
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
-  _scrollStringBuffer = false;
   _currentAnimation = animation2;
   Serial.println("VendE");
 }
 
 void ClockDisplay::playPianoAnimation() {
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
-  _scrollStringBuffer = false;
   _currentAnimation = animation3;
   Serial.println("piano");
 }
 
 void ClockDisplay::playTurntableAnimation() {
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
-  _anmiationRepetitions = 0;
- 
   _frameTimer = 0;
+  _anmiationRepetitions = 0;
   _currentAnimation = animation9;
-  _scrollStringBuffer = false;
+  // _displayState = BUFFER_SCROLL;
   // _frameTimer = _scrollStepRate;
   // _currentAnimation = NULL;
-  // _scrollStringBuffer = true;
-  
-  _stringScrollIndex = 0;
-
+  //_stringScrollIndex = 0;
   Serial.println("turntable");
 }
 
 void ClockDisplay::playSnoozAnimation() {
-  _scriptedAnimation = true;
+  _displayState = SCRIPTED_ANIMATION;
   _frameIndex = 0;
   _frameTimer = 0;
   _anmiationRepetitions = 0;
-  _scrollStringBuffer = false;
   _currentAnimation = animation6;
   Serial.println("snooz");
+}
+
+
+void ClockDisplay::setVuMeter(uint8_t level) {
+  _displayState = VU_METER;
 }
 
 

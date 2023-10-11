@@ -10,9 +10,6 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-#include "AudioSampleCashregister.h"
-#include "AudioSampleSinsweep.h"
-
 #define SDCARD_CS_PIN    BUILTIN_SDCARD
 #define SDCARD_MOSI_PIN  11  // not actually used
 #define SDCARD_SCK_PIN   13  // not actually used
@@ -67,8 +64,8 @@ void setup() {
     }
   }
 
-  mix1.gain(0, 0.4);
-  mix1.gain(1, 0.4);
+  mix1.gain(0, 0.1);
+  mix1.gain(1, 0.1);
 
   //audio.setup();
 
@@ -120,28 +117,31 @@ void buttonPressed(ClockInput pressedButton) {
 
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;
-    playWav1.play("DJENT1.WAV");
+    playWav1.play("GLADIATORS.WAV");
     display.playAtmAnimation();
   }
   else if (pressedButton == VENDE_BUTTON) {
     clockState = VENDE;
-    sound0.play(AudioSampleSinsweep);
+    playWav1.play("DEMNTEDCIRCUS.WAV");
     display.playVendeAnimation();
   }
   else if (pressedButton == PIANO_BUTTON) {
     clockState = PIANO;
-    playWav1.play("ALARM2.WAV");
+    playWav1.play("3SECSAWSWEEP.WAV");
     display.playPianoAnimation();
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
     display.stringBuffer = "    Gordon SuckS SHIt";
-    playWav1.play("ALARM1.WAV");
+    playWav1.play("3SECSQUARESWEEP.WAV");
     display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
-    playWav1.play("SINSWEEP.WAV");
+    playWav1.stop();
     display.playSnoozAnimation();
   }
+
+  Serial.print("audio usage:  ");
+  Serial.println(AudioProcessorUsage());
 }

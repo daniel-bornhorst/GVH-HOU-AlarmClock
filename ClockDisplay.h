@@ -13,6 +13,15 @@
 #include "HT16K33Driver.h"
 
 
+typedef enum DisplayState
+{
+  DISPLAY_OFF,
+  SCRIPTED_ANIMATION,
+  BUFFER_SCROLL,
+  VU_METER
+} display_state_;
+
+
 
 class ClockDisplay {
 public:
@@ -30,6 +39,8 @@ public:
   void playTurntableAnimation();
   void playSnoozAnimation();
 
+  void setVuMeter(uint8_t level);
+
   // Member functions
   void setClock(int hours, int minutes); // Set the time
 
@@ -41,23 +52,22 @@ private:
   int _hours;
   int _minutes;
 
+  DisplayState _displayState = DISPLAY_OFF;
+  int _refreshRate;
+
+  // Display Scrolling Variables
   uint8_t _displayBuffer[4];
   //String _stringBuffer;
   uint8_t _stringScrollIndex;
-
-  // This variable specifies whether or not the current animation is scripted or programatic
-  bool _scriptedAnimation;
-  bool _scrollStringBuffer;
+  unsigned long _scrollStepRate;
 
   // Variables for scripted behavior 
   const animationFrame* _currentAnimation;
   int _frameIndex;
   int _anmiationRepetitions = 0;
 
-  // Variables for programatic behavior
-  int _refreshRate;
-  unsigned long _scrollStepRate;
 
+  void playScriptedAnimation();
   void scrollStringBuffer();
   void randomizeDisplayBuffer(const uint8_t* frame);
   void loadDisplayBuffer(const uint8_t* frame);
