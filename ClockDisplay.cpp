@@ -7,7 +7,7 @@ ClockDisplay::ClockDisplay() {
   _frameTimer = 0;
 
   _frameIndex = 0;
-  _currentAnimation = animation4;
+  _currentAnimation = sevenOhSixThrob;
   _scrollStepRate = 250;
 }
 
@@ -41,34 +41,37 @@ void ClockDisplay::loop() {
   }
 }
 
-void ClockDisplay::playScriptedAnimation() {
+void ClockDisplay::playScriptedAnimation(bool newAnimation) {
 
   if (_currentAnimation == NULL) { return; }
 
-  if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
-
+  if (_frameAdvanced || newAnimation) {
     // Check for digit randomization mask
     if (_currentAnimation[_frameIndex].controlBits & RANDOMIZE_DISPLAY) {
       randomizeDisplayBuffer(_currentAnimation[_frameIndex].digitMasks);
-    }
-    else {
+    } else {
       loadDisplayBuffer(_currentAnimation[_frameIndex].digitMasks);
     }
-    
-    _matrix.displayRaw( _displayBuffer, 
-                        _currentAnimation[_frameIndex].controlBits & DISPLAY_COLON);
+
+    _matrix.displayRaw(_displayBuffer,
+                       _currentAnimation[_frameIndex].controlBits & DISPLAY_COLON);
 
     _matrix.brightness(_currentAnimation[_frameIndex].brightness);
+  }
 
-    if ( (_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0 ) { // if this is the last frame of the animation
+  if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
+    if ((_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0) {  // if this is the last frame of the animation
       _frameIndex = 0;
       _anmiationRepetitions++;
-    }
-    else {
+    } else {
       _frameIndex++;
     }
 
+    _frameAdvanced = true;
     _frameTimer = 0;
+  }
+  else {
+    _frameAdvanced = false;
   }
 }
 
@@ -85,57 +88,40 @@ void ClockDisplay::scrollStringBuffer() {
     Serial.println(_stringScrollIndex);
     if (_stringScrollIndex >= stringBuffer.length()) {
       _stringScrollIndex = 0;
-    }
-    else {
+    } else {
       _stringScrollIndex++;
     }
     _frameTimer = 0;
   }
-
 }
 
 void ClockDisplay::playIdleAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = _currentAnimation[0].holdTime; // Jump straight into the IDLE animation (dont wait for the first frame timeout time)
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation4;
+  loadAnimation(sevenOhSixThrob);
   Serial.println("IDLE");
 }
 
 void ClockDisplay::playAtmAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation7;
+  loadAnimation(sevenOhSixWipeDown);
   Serial.println("ATM");
 }
 
 void ClockDisplay::playVendeAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation2;
+  loadAnimation(circleAnimation1);
   Serial.println("VendE");
 }
 
 void ClockDisplay::playPianoAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation3;
+  loadAnimation(circleAnimation1);
   Serial.println("piano");
 }
 
 void ClockDisplay::playTurntableAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation9;
+  loadAnimation(circleAnimation1);
   // _displayState = BUFFER_SCROLL;
   // _frameTimer = _scrollStepRate;
   // _currentAnimation = NULL;
@@ -145,16 +131,15 @@ void ClockDisplay::playTurntableAnimation() {
 
 void ClockDisplay::playSnoozAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = animation6;
+  loadAnimation(circleAnimation1);
   Serial.println("snooz");
 }
 
 
 void ClockDisplay::setVuMeter(uint8_t level) {
   _displayState = VU_METER;
+  loadDisplayBuffer(vuLevelDisplayStates[level]);
+  _matrix.displayRaw(_displayBuffer);
 }
 
 
@@ -175,4 +160,10 @@ void ClockDisplay::loadDisplayBuffer(const uint8_t* frame) {
   }
 }
 
-
+void ClockDisplay::loadAnimation(const AnimationFrame* newAnimation) {
+  _frameIndex = 0;
+  _frameTimer = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = newAnimation;
+  playScriptedAnimation(true); // true indicates that we've loaded a new animation
+}

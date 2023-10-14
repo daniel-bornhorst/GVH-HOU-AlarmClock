@@ -62,15 +62,17 @@ private:
   unsigned long _scrollStepRate;
 
   // Variables for scripted behavior 
-  const animationFrame* _currentAnimation;
+  const AnimationFrame* _currentAnimation;
   int _frameIndex;
+  bool _frameAdvanced = false;
   int _anmiationRepetitions = 0;
 
 
-  void playScriptedAnimation();
+  void playScriptedAnimation(bool newAnimation = false);
   void scrollStringBuffer();
   void randomizeDisplayBuffer(const uint8_t* frame);
   void loadDisplayBuffer(const uint8_t* frame);
+  void loadAnimation(const AnimationFrame* newAnimation);
 
 };
 

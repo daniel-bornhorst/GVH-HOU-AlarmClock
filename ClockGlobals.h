@@ -9,6 +9,7 @@ typedef enum ClockState
   PIANO,
   TURNTABLE,
   SNOOZ,
+  MUSIC,
   ACTUAL_TIME
 } clock_state_;
 
