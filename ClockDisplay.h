@@ -18,7 +18,8 @@ typedef enum DisplayState
   DISPLAY_OFF,
   SCRIPTED_ANIMATION,
   BUFFER_SCROLL,
-  VU_METER
+  VU_METER,
+  
 } display_state_;
 
 
@@ -42,7 +43,7 @@ public:
   void setVuMeter(uint8_t level);
 
   // Member functions
-  void setClock(int hours, int minutes); // Set the time
+  void setTime(int hours, int minutes); // Set the time
 
 private:
 

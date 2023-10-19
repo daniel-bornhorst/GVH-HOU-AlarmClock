@@ -78,25 +78,29 @@ const int vuMeterRefreshRate = 24;
 
 void setup() {
 
+  // Serial
   Serial.begin(9600);
   delay(1000);
 
-  AudioMemory(10);
-
+  // Button Setup
   pinMode(ATM_BUTTON, INPUT_PULLUP);
   pinMode(VENDE_BUTTON, INPUT_PULLUP);
   pinMode(PIANO_BUTTON, INPUT_PULLUP);
   pinMode(TURNTABLE_BUTTON, INPUT_PULLUP);
   pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
+  // Ethernet Setup
   Ethernet.begin(mac, ip, ddns, gateway, subnet);
   //Ethernet.begin(mac, ip); // use this if you don't need gateway and subnet
   Udp.begin(localPort);
   autonet.setup(Udp);
 
+  // Display Setup
   display.setup();
+  display.setTime(12, 43);
   display.playIdleAnimation();
 
+  // SD Card Setup
   SPI.setMOSI(SDCARD_MOSI_PIN);
   SPI.setSCK(SDCARD_SCK_PIN);
   if (!(SD.begin(SDCARD_CS_PIN))) {
@@ -107,6 +111,8 @@ void setup() {
     }
   }
 
+  // Audio Setup
+  AudioMemory(10);
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.1);
 }
@@ -117,6 +123,7 @@ void loop() {
   autonet.loop();
   display.loop();
   buttonLoop();
+  networkLoop();
 
   switch (clockState) {
     case IDLE:

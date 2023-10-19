@@ -103,7 +103,7 @@ void ClockDisplay::playIdleAnimation() {
 
 void ClockDisplay::playAtmAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(sevenOhSixWipeDown);
+  loadAnimation(sevenOhSixGlitch);
   Serial.println("ATM");
 }
 
@@ -143,14 +143,14 @@ void ClockDisplay::setVuMeter(uint8_t level) {
 }
 
 
-void ClockDisplay::setClock(int hours, int minutes) {
+void ClockDisplay::setTime(int hours, int minutes) {
   _hours = hours;
   _minutes = minutes;
 }
 
 void ClockDisplay::randomizeDisplayBuffer(const uint8_t* frame) {
   for (int i = 0; i < 4; ++i) {
-    _displayBuffer[i] = random(0, 256) | frame[i];
+    _displayBuffer[i] = random(0, 256) & frame[i];
   }
 }
 
