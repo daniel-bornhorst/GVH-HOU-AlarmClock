@@ -46,7 +46,7 @@ AudioPlayMemory sound0;
 //AudioAnalyzeRMS peak1;
 AudioAnalyzePeak peak1;        
 AudioMixer4 mixer1;
-AudioOutputI2S2 headphones;
+AudioOutputI2S headphones;
 AudioConnection c1(playWav1, 0, mixer1, 0);
 AudioConnection c2(sound0, 0, mixer1, 1);
 AudioConnection c3(mixer1, peak1);
@@ -211,31 +211,31 @@ void buttonPressed(ClockInput pressedButton) {
 
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;
-    //playWav1.play("GLADIATORS.WAV");
+    playWav1.play("GLADIATORS.WAV");
     display.playAtmAnimation();
   }
   else if (pressedButton == VENDE_BUTTON) {
-    clockState = VENDE;
-    //clockState = MUSIC;
+    //clockState = VENDE;
+    clockState = MUSIC;
     vuMeterRefreshTimer = 0;
     //playWav1.play("DEMNTEDCIRCUS.WAV");
-    //playWav1.play("LONGDJENT.WAV");
+    playWav1.play("LONGDJENT.WAV");
     //playWav1.play("ALARM2.WAV");
     display.playVendeAnimation();
   }
   else if (pressedButton == PIANO_BUTTON) {
     clockState = PIANO;
-    //playWav1.play("3SECSAWSWEEP.WAV");
+    playWav1.play("3SECSAWSWEEP.WAV");
     display.playPianoAnimation();
   }
   else if (pressedButton == TURNTABLE_BUTTON) {
     clockState = TURNTABLE;
-    //playWav1.play("3SECSQUARESWEEP.WAV");
+    playWav1.play("3SECSINESWEEP.WAV");
     display.playTurntableAnimation();
   }
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
-    //playWav1.stop();
+    playWav1.stop();
     display.playSnoozAnimation();
   }
 

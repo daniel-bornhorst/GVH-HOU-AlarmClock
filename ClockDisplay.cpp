@@ -121,7 +121,8 @@ void ClockDisplay::playPianoAnimation() {
 
 void ClockDisplay::playTurntableAnimation() {
   _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(circleAnimation1);
+  //loadAnimation(circleAnimation1);
+  loadAnimation(noiseAnimation1);
   // _displayState = BUFFER_SCROLL;
   // _frameTimer = _scrollStepRate;
   // _currentAnimation = NULL;

@@ -148,7 +148,9 @@ private:
   uint8_t endTransmission(int stop = true);
   void finish();
 
-  I2CMaster& master = Master;
+  //I2CMaster& master = Master;   // I2C 0
+  //I2CMaster& master = Master1;  // I2C 1
+  I2CMaster& master = Master2;    // I2C 2
   uint8_t write_address = 0;
   size_t tx_next_byte_to_write = 0;
   static const uint32_t timeout_millis = 200;
