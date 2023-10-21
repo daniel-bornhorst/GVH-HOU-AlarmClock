@@ -11,6 +11,7 @@ ClockDisplay::ClockDisplay() {
   _scrollStepRate = 250;
 }
 
+
 void ClockDisplay::setup() {
   // Setup display
   _matrix.begin();
@@ -24,24 +25,139 @@ void ClockDisplay::setup() {
   _stringScrollIndex = 0;
 }
 
+
 void ClockDisplay::loop() {
 
   switch (_displayState) {
     case DISPLAY_OFF:
       return;
     case SCRIPTED_ANIMATION:
-      playScriptedAnimation();
+      scriptedAnimationLoop();
       break;
     case BUFFER_SCROLL:
-      scrollStringBuffer();
+      scrollLoop();
       break;
     case VU_METER:
-      //setVuMeter();
+      break;
+    case MANUAL_STATIC:
       break;
   }
 }
 
-void ClockDisplay::playScriptedAnimation(bool newAnimation) {
+
+void ClockDisplay::playIdleAnimation() {
+  loadAnimation(sevenOhSixThrob);
+  Serial.println("IDLE");
+}
+
+
+void ClockDisplay::playAtmAnimation() {
+  loadAnimation(sevenOhSixGlitch);
+  Serial.println("ATM");
+}
+
+
+void ClockDisplay::playVendeAnimation() {
+  loadAnimation(circleAnimation1);
+  Serial.println("VendE");
+}
+
+
+void ClockDisplay::playPianoAnimation() {
+  loadAnimation(circleAnimation1);
+  Serial.println("piano");
+}
+
+
+void ClockDisplay::playTurntableAnimation() {
+  loadAnimation(noiseAnimation1);
+  Serial.println("turntable");
+}
+
+
+void ClockDisplay::playSnoozAnimation() {
+  loadAnimation(circleAnimation1);
+  Serial.println("snooz");
+}
+
+
+void ClockDisplay::scrollString(String buff) {
+  setStringBuffer(buff);
+  setDisplayState(BUFFER_SCROLL);
+}
+
+
+void ClockDisplay::displayInt(int displayVal) {
+  setDisplayState(MANUAL_STATIC);
+  _matrix.displayColon(0);
+  _matrix.displayInt(displayVal);
+}
+
+
+void ClockDisplay::displayString(String displayString) {
+  setDisplayState(MANUAL_STATIC);
+
+  char chars[displayString.length()];
+  displayString.toCharArray(chars, displayString.length());
+
+  _matrix.displayChars(chars);
+}
+
+
+void ClockDisplay::setTime(int hours, int minutes) {
+  _hours = hours;
+  _minutes = minutes;
+}
+
+
+void ClockDisplay::setStringBuffer(String buff) {
+  _stringBuffer = buff;
+}
+
+
+void ClockDisplay::setStringBuffer(int intValBuff) {
+  _stringBuffer = String(intValBuff);
+}
+
+
+void ClockDisplay::setDisplayState(DisplayState newState) {
+  if (_displayState != newState) {
+    _matrix.brightness(DEFAULT_BRIGHTNESS);
+    _displayState = newState;
+  }
+}
+
+
+void ClockDisplay::clear() {
+  _matrix.displayClear();
+}
+
+
+void ClockDisplay::randomizeDisplayBuffer(const uint8_t* frame) {
+  for (int i = 0; i < 4; ++i) {
+    _displayBuffer[i] = random(0, 256) & frame[i];
+  }
+}
+
+
+void ClockDisplay::loadDisplayBuffer(const uint8_t* frame) {
+  for (int i = 0; i < 4; ++i) {
+    _displayBuffer[i] = frame[i];
+  }
+}
+
+
+void ClockDisplay::loadAnimation(const AnimationFrame* newAnimation) {
+  setDisplayState(SCRIPTED_ANIMATION);
+  _frameIndex = 0;
+  _frameTimer = 0;
+  _anmiationRepetitions = 0;
+  _currentAnimation = newAnimation;
+  scriptedAnimationLoop(true); // true indicates that we've loaded a new animation
+}
+
+
+void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
 
   if (_currentAnimation == NULL) { return; }
 
@@ -75,18 +191,17 @@ void ClockDisplay::playScriptedAnimation(bool newAnimation) {
   }
 }
 
-void ClockDisplay::scrollStringBuffer() {
+void ClockDisplay::scrollLoop() {
 
   if (_frameTimer > _scrollStepRate) {
 
-    char shitBuff[stringBuffer.length()];
+    char charBuff[_stringBuffer.length()];
 
-    String subShit = stringBuffer.substring(_stringScrollIndex);
-    subShit.toCharArray(shitBuff, stringBuffer.length());
+    String subString = _stringBuffer.substring(_stringScrollIndex);
+    subString.toCharArray(charBuff, _stringBuffer.length());
 
-    _matrix.displayChars(shitBuff);
-    Serial.println(_stringScrollIndex);
-    if (_stringScrollIndex >= stringBuffer.length()) {
+    _matrix.displayChars(charBuff);
+    if (_stringScrollIndex >= _stringBuffer.length()) {
       _stringScrollIndex = 0;
     } else {
       _stringScrollIndex++;
@@ -95,76 +210,9 @@ void ClockDisplay::scrollStringBuffer() {
   }
 }
 
-void ClockDisplay::playIdleAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(sevenOhSixThrob);
-  Serial.println("IDLE");
-}
-
-void ClockDisplay::playAtmAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(sevenOhSixGlitch);
-  Serial.println("ATM");
-}
-
-void ClockDisplay::playVendeAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(circleAnimation1);
-  Serial.println("VendE");
-}
-
-void ClockDisplay::playPianoAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(circleAnimation1);
-  Serial.println("piano");
-}
-
-void ClockDisplay::playTurntableAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  //loadAnimation(circleAnimation1);
-  loadAnimation(noiseAnimation1);
-  // _displayState = BUFFER_SCROLL;
-  // _frameTimer = _scrollStepRate;
-  // _currentAnimation = NULL;
-  //_stringScrollIndex = 0;
-  Serial.println("turntable");
-}
-
-void ClockDisplay::playSnoozAnimation() {
-  _displayState = SCRIPTED_ANIMATION;
-  loadAnimation(circleAnimation1);
-  Serial.println("snooz");
-}
-
 
 void ClockDisplay::setVuMeter(uint8_t level) {
-  _displayState = VU_METER;
+  setDisplayState(VU_METER);
   loadDisplayBuffer(vuLevelDisplayStates[level]);
   _matrix.displayRaw(_displayBuffer);
-}
-
-
-void ClockDisplay::setTime(int hours, int minutes) {
-  _hours = hours;
-  _minutes = minutes;
-}
-
-void ClockDisplay::randomizeDisplayBuffer(const uint8_t* frame) {
-  for (int i = 0; i < 4; ++i) {
-    _displayBuffer[i] = random(0, 256) & frame[i];
-  }
-}
-
-void ClockDisplay::loadDisplayBuffer(const uint8_t* frame) {
-  for (int i = 0; i < 4; ++i) {
-    _displayBuffer[i] = frame[i];
-  }
-}
-
-void ClockDisplay::loadAnimation(const AnimationFrame* newAnimation) {
-  _frameIndex = 0;
-  _frameTimer = 0;
-  _anmiationRepetitions = 0;
-  _currentAnimation = newAnimation;
-  playScriptedAnimation(true); // true indicates that we've loaded a new animation
 }

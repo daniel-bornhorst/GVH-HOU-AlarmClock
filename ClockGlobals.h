@@ -10,7 +10,8 @@ typedef enum ClockState
   TURNTABLE,
   SNOOZ,
   MUSIC,
-  ACTUAL_TIME
+  ACTUAL_TIME,
+  TUNER
 } clock_state_;
 
 // Represents the available user inputs on the clock
@@ -23,7 +24,7 @@ typedef enum ClockInput
   TURNTABLE_BUTTON = 33,
   SNOOZ_BUTTON = 37,
   MODE_SWITCH = 38,
-  TUNING_POT = A2
+  TUNING_POT = A12
 } clock_input_;
 
 // Represents the different states of the four way toggle

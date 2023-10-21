@@ -17,8 +17,9 @@ typedef enum DisplayState
 {
   DISPLAY_OFF,
   SCRIPTED_ANIMATION,
+  MANUAL_STATIC,
   BUFFER_SCROLL,
-  VU_METER,
+  VU_METER
   
 } display_state_;
 
@@ -28,7 +29,6 @@ class ClockDisplay {
 public:
   // Constructors
   ClockDisplay(); // Default constructor
-  String stringBuffer;
 
   void setup();
   void loop();
@@ -42,8 +42,17 @@ public:
 
   void setVuMeter(uint8_t level);
 
+  void scrollString(String buff);
+
+  void displayInt(int displayVal);
+  void displayString(String displayString);
+
   // Member functions
   void setTime(int hours, int minutes); // Set the time
+  void setStringBuffer(String buff);
+  void setStringBuffer(int intValBuff);
+  void clear();
+
 
 private:
 
@@ -58,7 +67,7 @@ private:
 
   // Display Scrolling Variables
   uint8_t _displayBuffer[4];
-  //String _stringBuffer;
+  String _stringBuffer;
   uint8_t _stringScrollIndex;
   unsigned long _scrollStepRate;
 
@@ -68,9 +77,9 @@ private:
   bool _frameAdvanced = false;
   int _anmiationRepetitions = 0;
 
-
-  void playScriptedAnimation(bool newAnimation = false);
-  void scrollStringBuffer();
+  void setDisplayState(DisplayState newState);
+  void scriptedAnimationLoop(bool newAnimation = false);
+  void scrollLoop();
   void randomizeDisplayBuffer(const uint8_t* frame);
   void loadDisplayBuffer(const uint8_t* frame);
   void loadAnimation(const AnimationFrame* newAnimation);
