@@ -51,6 +51,12 @@ void ClockDisplay::playIdleAnimation() {
 }
 
 
+void ClockDisplay::playGlitchAnimation() {
+  loadAnimation(sevenOhSixGlitch);
+  Serial.println("gLiTcH");
+}
+
+
 void ClockDisplay::playAtmAnimation() {
   loadAnimation(sevenOhSixGlitch);
   Serial.println("ATM");

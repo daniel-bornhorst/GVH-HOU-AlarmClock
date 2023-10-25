@@ -71,17 +71,21 @@ Bounce turntableButton = Bounce(TURNTABLE_BUTTON, 100);
 Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
 
 // Timers
-elapsedMillis idleTimeout;
+elapsedMillis idleTimeoutTimer;
 elapsedMillis vuMeterRefreshTimer;
+elapsedMillis glitchTimer;
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
+long unsigned int tunerModeTimeoutTime = 3000;
+//long unsigned int glitchTimeoutTime = 240000; // 4 min
+//long unsigned int glitchTimeoutTime = 60000; // 1 min
+long unsigned int glitchTimeoutTime = 30000; // 30 sec
 const int vuMeterRefreshRate = 24;
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
-long unsigned int tunerModeTimeoutTime = 3000;
-long tunerPosition  = -999;
+long tunerPosition  = 0;
 
 
 void setup() {
@@ -137,6 +141,10 @@ void loop() {
 
   switch (clockState) {
     case IDLE:
+      checkForGlitchTimeout();
+      break;
+    case GLITCH:
+      checkForIdleTimeout();
       break;
     case MUSIC:
       musicStateLoop();
@@ -183,7 +191,7 @@ void inputPollingLoop() {
     
     clockState = TUNER;
     idleTimeoutTime = tunerModeTimeoutTime;
-    idleTimeout = 0;
+    idleTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
     Serial.println(newTunerPosition);
@@ -213,7 +221,7 @@ void musicStateLoop() {
 
 void buttonPressed(ClockInput pressedButton) {
 
-  idleTimeout = 0;
+  idleTimeoutTimer = 0;
 
   if (pressedButton == ATM_BUTTON) {
     clockState = ATM;
@@ -252,9 +260,21 @@ void buttonPressed(ClockInput pressedButton) {
 
 
 void checkForIdleTimeout() {
-  if (idleTimeout >= idleTimeoutTime) {
+  if (idleTimeoutTimer >= idleTimeoutTime) {
     clockState = IDLE;
+    glitchTimer = 0;
     idleTimeoutTime = defaultIdleTimeoutTime;
     display.playIdleAnimation();
+  }
+}
+
+
+void checkForGlitchTimeout() {
+  if (glitchTimer >= glitchTimeoutTime) {
+    clockState = GLITCH;
+    glitchTimer = 0;
+    idleTimeoutTimer = 0;
+    idleTimeoutTime = defaultIdleTimeoutTime;
+    display.playGlitchAnimation();
   }
 }

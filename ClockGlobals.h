@@ -4,6 +4,7 @@
 typedef enum ClockState
 {
   IDLE,
+  GLITCH,
   ATM,
   VENDE,
   PIANO,

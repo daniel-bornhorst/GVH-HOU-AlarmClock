@@ -34,6 +34,7 @@ public:
   void loop();
 
   void playIdleAnimation();
+  void playGlitchAnimation();
   void playAtmAnimation();
   void playVendeAnimation();
   void playPianoAnimation();
