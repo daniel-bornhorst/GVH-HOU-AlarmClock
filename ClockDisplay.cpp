@@ -8,7 +8,6 @@ ClockDisplay::ClockDisplay() {
 
   _frameIndex = 0;
   _currentAnimation = sevenOhSixThrob;
-  _scrollStepRate = 250;
 }
 
 
@@ -88,7 +87,8 @@ void ClockDisplay::playSnoozAnimation() {
 
 
 void ClockDisplay::scrollString(String buff) {
-  setStringBuffer(buff);
+  setStringBuffer( String("    " + buff) );
+  _stringScrollIndex = 0;
   setDisplayState(BUFFER_SCROLL);
 }
 
@@ -181,6 +181,7 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
     _matrix.brightness(_currentAnimation[_frameIndex].brightness);
   }
 
+
   if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
     if ((_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0) {  // if this is the last frame of the animation
       _frameIndex = 0;
@@ -197,19 +198,34 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
   }
 }
 
+
 void ClockDisplay::scrollLoop() {
 
-  if (_frameTimer > _scrollStepRate) {
+  if (_frameTimer > _scrollStepRate)  {
 
     char charBuff[_stringBuffer.length()];
-
     String subString = _stringBuffer.substring(_stringScrollIndex);
+    switch(subString.length()) {        // Pad the string out if it does fill the whole screen
+      case 0:
+        subString = String("    ");
+        break;
+      case 1:
+        subString = String(subString + "   ");
+        break;
+      case 2:
+        subString = String(subString + "  ");
+        break;
+      case 3:
+        subString = String(subString + " ");
+        break;
+    }
     subString.toCharArray(charBuff, _stringBuffer.length());
-
     _matrix.displayChars(charBuff);
+    
     if (_stringScrollIndex >= _stringBuffer.length()) {
       _stringScrollIndex = 0;
-    } else {
+    }
+    else {
       _stringScrollIndex++;
     }
     _frameTimer = 0;

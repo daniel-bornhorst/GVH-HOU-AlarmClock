@@ -74,18 +74,24 @@ Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
 elapsedMillis idleTimeoutTimer;
 elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
+elapsedMillis ledToggleTimer;
+elapsedMillis ledOnTimeTimer;
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
 long unsigned int tunerModeTimeoutTime = 3000;
+long unsigned int glitchTimeoutTime = 600000; // 10 min
 //long unsigned int glitchTimeoutTime = 240000; // 4 min
 //long unsigned int glitchTimeoutTime = 60000; // 1 min
-long unsigned int glitchTimeoutTime = 30000; // 30 sec
+//long unsigned int glitchTimeoutTime = 30000; // 30 sec
+long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 24;
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long tunerPosition  = 0;
+long unsigned int ledToggleTime = 0;
+bool ledToggle = false;
 
 
 void setup() {
@@ -101,7 +107,8 @@ void setup() {
   pinMode(TURNTABLE_BUTTON, INPUT_PULLUP);
   pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
-  pinMode(TUNING_POT, INPUT);
+  pinMode(tunerLedPinLeft, OUTPUT);
+  pinMode(tunerLedPinRight, OUTPUT);
 
   // Ethernet Setup
   Ethernet.begin(mac, ip, ddns, gateway, subnet);
@@ -184,7 +191,7 @@ void inputPollingLoop() {
     buttonPressed(SNOOZ_BUTTON);
   }
 
-  // Poll tuning pot
+  // Poll tuning encoder
   // Only change state if value has changed by a determined amount
   long newTunerPosition = tunerEncoder.read();
   if (newTunerPosition != tunerPosition) {
@@ -201,6 +208,8 @@ void inputPollingLoop() {
 
 void tunerLoop() {
   display.displayInt(tunerPosition);
+
+
 }
 
 
@@ -246,7 +255,8 @@ void buttonPressed(ClockInput pressedButton) {
     clockState = TURNTABLE;
     playWav1.play("3SECSINESWEEP.WAV");
     idleTimeoutTime = 20000;
-    display.scrollString("GORDON IS A BIG FAT WEENIE");
+    //display.scrollString("Gordon KILLED JARED");
+    display.scrollString("yo");
   } 
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;

@@ -9,7 +9,6 @@
 // #include <Adafruit_GFX.h>
 // #include "Adafruit_LEDBackpack.h"
 
-//#include "HT16K33.h"
 #include "HT16K33Driver.h"
 
 
@@ -70,7 +69,7 @@ private:
   uint8_t _displayBuffer[4];
   String _stringBuffer;
   uint8_t _stringScrollIndex;
-  unsigned long _scrollStepRate;
+  const unsigned long _scrollStepRate = 200;
 
   // Variables for scripted behavior 
   const AnimationFrame* _currentAnimation;
