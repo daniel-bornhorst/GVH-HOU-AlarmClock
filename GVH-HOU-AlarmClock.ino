@@ -1,7 +1,9 @@
-#include <Bounce.h>
-
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
+
+#define ENCODER_DO_NOT_USE_INTERRUPTS
+#include <Encoder.h>
+#include <Bounce.h>
 
 #include "autonet.h"
 #include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
@@ -55,6 +57,7 @@ AudioConnection c5(mixer1, 0, headphones, 1);
 
 // Peripheral Devies
 ClockDisplay display;
+Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
 
 // State holders
 ClockState clockState = IDLE;
@@ -78,7 +81,7 @@ const int vuMeterRefreshRate = 24;
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long unsigned int tunerModeTimeoutTime = 3000;
-int analogTunerVal;
+long tunerPosition  = -999;
 
 
 void setup() {
@@ -122,8 +125,6 @@ void setup() {
   AudioMemory(10);
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.1);
-
-  analogTunerVal = map(analogRead(TUNING_POT), 0, 1023, 0, 100);
 }
 
 
@@ -177,20 +178,21 @@ void inputPollingLoop() {
 
   // Poll tuning pot
   // Only change state if value has changed by a determined amount
-  int newTunerVal = map(analogRead(TUNING_POT), 0, 1023, 0, 100);
-  int difference = abs(newTunerVal - analogTunerVal);
-  if (difference > 3) {
-    analogTunerVal = newTunerVal;
+  long newTunerPosition = tunerEncoder.read();
+  if (newTunerPosition != tunerPosition) {
+    
     clockState = TUNER;
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeout = 0;
-    Serial.println(analogTunerVal);
+
+    tunerPosition = newTunerPosition;
+    Serial.println(newTunerPosition);
   }
 }
 
 
 void tunerLoop() {
-  display.displayInt(analogTunerVal);
+  display.displayInt(tunerPosition);
 }
 
 

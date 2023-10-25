@@ -36,4 +36,7 @@ typedef enum ToggleSwitchState
   ALARM_SWITCH_STATE
 } toggle_switch_state_;
 
+const uint8_t tunerEncoderPin1 = 30;
+const uint8_t tunerEncoderPin2 = 31;
+
 #endif
