@@ -63,19 +63,21 @@ void ClockDisplay::playSleepAnimation() {
 
 
 void ClockDisplay::playWakeAnimation() {
-  loadAnimation(circleAnimation1);
+  loadAnimation(noiseAnimation1);
   Serial.println("Wake Button");
 }
 
 
 void ClockDisplay::playHourAnimation() {
-  loadAnimation(circleAnimation1);
+  //loadAnimation(middleOutWipe1);
+  //loadAnimation(sevenOhSixHour);
+  loadAnimation(diagonalWipe1);
   Serial.println("Hour Button");
 }
 
 
 void ClockDisplay::playMinuteAnimation() {
-  loadAnimation(noiseAnimation1);
+  loadAnimation(sevenOhSixMinute);
   Serial.println("Minute Button");
 }
 
@@ -184,8 +186,16 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
 
   if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
     if ((_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0) {  // if this is the last frame of the animation
-      _frameIndex = 0;
+      
       _anmiationRepetitions++;
+      
+      if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
+        loadAnimation(sevenOhSixThrob);
+        return;
+      }
+
+      _frameIndex = 0;
+    
     } else {
       _frameIndex++;
     }

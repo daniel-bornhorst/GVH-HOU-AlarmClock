@@ -153,9 +153,9 @@ void loop() {
     case GLITCH:
       checkForIdleTimeout();
       break;
-    case MUSIC:
-      musicStateLoop();
-      break;
+    // case MUSIC:
+    //   musicStateLoop();
+    //   break;
     case TUNER:
       tunerLoop();
       checkForIdleTimeout();
@@ -254,9 +254,9 @@ void buttonPressed(ClockInput pressedButton) {
   else if (pressedButton == MINUTE_BUTTON) {
     clockState = MINUTE;
     playWav1.play("3SECSINESWEEP.WAV");
-    idleTimeoutTime = 20000;
     //display.scrollString("Gordon KILLED JARED");
-    display.scrollString("yo");
+    //display.scrollString("yo");
+    display.playMinuteAnimation();
   } 
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
