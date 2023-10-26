@@ -56,33 +56,33 @@ void ClockDisplay::playGlitchAnimation() {
 }
 
 
-void ClockDisplay::playAtmAnimation() {
+void ClockDisplay::playSleepAnimation() {
   loadAnimation(sevenOhSixGlitch);
-  Serial.println("ATM");
+  Serial.println("Sleep Button");
 }
 
 
-void ClockDisplay::playVendeAnimation() {
+void ClockDisplay::playWakeAnimation() {
   loadAnimation(circleAnimation1);
-  Serial.println("VendE");
+  Serial.println("Wake Button");
 }
 
 
-void ClockDisplay::playPianoAnimation() {
+void ClockDisplay::playHourAnimation() {
   loadAnimation(circleAnimation1);
-  Serial.println("piano");
+  Serial.println("Hour Button");
 }
 
 
-void ClockDisplay::playTurntableAnimation() {
+void ClockDisplay::playMinuteAnimation() {
   loadAnimation(noiseAnimation1);
-  Serial.println("turntable");
+  Serial.println("Minute Button");
 }
 
 
 void ClockDisplay::playSnoozAnimation() {
   loadAnimation(circleAnimation1);
-  Serial.println("snooz");
+  Serial.println("Snooz Button");
 }
 
 

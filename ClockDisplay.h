@@ -34,10 +34,10 @@ public:
 
   void playIdleAnimation();
   void playGlitchAnimation();
-  void playAtmAnimation();
-  void playVendeAnimation();
-  void playPianoAnimation();
-  void playTurntableAnimation();
+  void playSleepAnimation();
+  void playWakeAnimation();
+  void playHourAnimation();
+  void playMinuteAnimation();
   void playSnoozAnimation();
 
   void setVuMeter(uint8_t level);

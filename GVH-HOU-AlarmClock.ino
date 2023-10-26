@@ -64,10 +64,10 @@ ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
 // Buttons
-Bounce atmButton = Bounce(ATM_BUTTON, 100);
-Bounce vendeButton = Bounce(VENDE_BUTTON, 100);  // 5 ms debounce time
-Bounce pianoButton = Bounce(PIANO_BUTTON, 100);
-Bounce turntableButton = Bounce(TURNTABLE_BUTTON, 100);
+Bounce sleepButton = Bounce(SLEEP_BUTTON, 100);
+Bounce wakeButton = Bounce(WAKE_BUTTON, 100);  // 5 ms debounce time
+Bounce hourButton = Bounce(HOUR_BUTTON, 100);
+Bounce minuteButton = Bounce(MINUTE_BUTTON, 100);
 Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
 
 // Timers
@@ -80,8 +80,8 @@ elapsedMillis ledOnTimeTimer;
 // Consts
 const int defaultIdleTimeoutTime = 5000;
 long unsigned int tunerModeTimeoutTime = 3000;
-long unsigned int glitchTimeoutTime = 600000; // 10 min
-//long unsigned int glitchTimeoutTime = 240000; // 4 min
+//long unsigned int glitchTimeoutTime = 600000; // 10 min
+long unsigned int glitchTimeoutTime = 240000; // 4 min
 //long unsigned int glitchTimeoutTime = 60000; // 1 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
@@ -101,10 +101,10 @@ void setup() {
   delay(1000);
 
   // Button Setup
-  pinMode(ATM_BUTTON, INPUT_PULLUP);
-  pinMode(VENDE_BUTTON, INPUT_PULLUP);
-  pinMode(PIANO_BUTTON, INPUT_PULLUP);
-  pinMode(TURNTABLE_BUTTON, INPUT_PULLUP);
+  pinMode(SLEEP_BUTTON, INPUT_PULLUP);
+  pinMode(WAKE_BUTTON, INPUT_PULLUP);
+  pinMode(HOUR_BUTTON, INPUT_PULLUP);
+  pinMode(MINUTE_BUTTON, INPUT_PULLUP);
   pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
   pinMode(tunerLedPinLeft, OUTPUT);
@@ -173,20 +173,20 @@ void networkLoop() {
 
 void inputPollingLoop() {
   // Check for button presses
-  atmButton.update();
-  vendeButton.update();
-  pianoButton.update();
-  turntableButton.update();
+  sleepButton.update();
+  wakeButton.update();
+  hourButton.update();
+  minuteButton.update();
   snoozButton.update();
 
-  if (atmButton.fallingEdge()) {
-    buttonPressed(ATM_BUTTON);
-  } else if (vendeButton.fallingEdge()) {
-    buttonPressed(VENDE_BUTTON);
-  } else if (pianoButton.fallingEdge()) {
-    buttonPressed(PIANO_BUTTON);
-  } else if (turntableButton.fallingEdge()) {
-    buttonPressed(TURNTABLE_BUTTON);
+  if (sleepButton.fallingEdge()) {
+    buttonPressed(SLEEP_BUTTON);
+  } else if (wakeButton.fallingEdge()) {
+    buttonPressed(WAKE_BUTTON);
+  } else if (hourButton.fallingEdge()) {
+    buttonPressed(HOUR_BUTTON);
+  } else if (minuteButton.fallingEdge()) {
+    buttonPressed(MINUTE_BUTTON);
   } else if (snoozButton.fallingEdge()) {
     buttonPressed(SNOOZ_BUTTON);
   }
@@ -232,27 +232,27 @@ void buttonPressed(ClockInput pressedButton) {
 
   idleTimeoutTimer = 0;
 
-  if (pressedButton == ATM_BUTTON) {
-    clockState = ATM;
+  if (pressedButton == SLEEP_BUTTON) {
+    clockState = SLEEP;
     playWav1.play("GLADIATORS.WAV");
-    display.playAtmAnimation();
+    display.playSleepAnimation();
   } 
-  else if (pressedButton == VENDE_BUTTON) {
-    //clockState = VENDE;
+  else if (pressedButton == WAKE_BUTTON) {
+    //clockState = WAKE;
     clockState = MUSIC;
     vuMeterRefreshTimer = 0;
     //playWav1.play("DEMNTEDCIRCUS.WAV");
     playWav1.play("LONGDJENT.WAV");
     //playWav1.play("ALARM2.WAV");
-    display.playVendeAnimation();
+    display.playWakeAnimation();
   } 
-  else if (pressedButton == PIANO_BUTTON) {
-    clockState = PIANO;
+  else if (pressedButton == HOUR_BUTTON) {
+    clockState = HOUR;
     playWav1.play("3SECSAWSWEEP.WAV");
-    display.playPianoAnimation();
+    display.playHourAnimation();
   } 
-  else if (pressedButton == TURNTABLE_BUTTON) {
-    clockState = TURNTABLE;
+  else if (pressedButton == MINUTE_BUTTON) {
+    clockState = MINUTE;
     playWav1.play("3SECSINESWEEP.WAV");
     idleTimeoutTime = 20000;
     //display.scrollString("Gordon KILLED JARED");

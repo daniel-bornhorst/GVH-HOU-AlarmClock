@@ -5,10 +5,10 @@ typedef enum ClockState
 {
   IDLE,
   GLITCH,
-  ATM,
-  VENDE,
-  PIANO,
-  TURNTABLE,
+  SLEEP,
+  WAKE,
+  HOUR,
+  MINUTE,
   SNOOZ,
   MUSIC,
   ACTUAL_TIME,
@@ -19,10 +19,10 @@ typedef enum ClockState
 // the values are the teensy pins connected the input
 typedef enum ClockInput
 {
-  ATM_BUTTON = 36,
-  VENDE_BUTTON = 35,
-  PIANO_BUTTON = 34,
-  TURNTABLE_BUTTON = 33,
+  SLEEP_BUTTON = 36,
+  WAKE_BUTTON = 35,
+  HOUR_BUTTON = 34,
+  MINUTE_BUTTON = 33,
   SNOOZ_BUTTON = 37,
   MODE_SWITCH = 38,
   TUNING_POT = A12
