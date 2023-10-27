@@ -57,7 +57,7 @@ void ClockDisplay::playGlitchAnimation() {
 
 
 void ClockDisplay::playSleepAnimation() {
-  loadAnimation(sevenOhSixGlitch);
+  loadAnimation(middleOutWipe1);
   Serial.println("Sleep Button");
 }
 
