@@ -25,7 +25,7 @@ typedef enum ClockInput
   MINUTE_BUTTON = 33,
   SNOOZ_BUTTON = 37,
   MODE_SWITCH = 38,
-  TUNING_POT = A12
+  TUNING_POT = A1
 } clock_input_;
 
 // Represents the different states of the four way toggle

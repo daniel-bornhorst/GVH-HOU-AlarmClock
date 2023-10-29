@@ -7,18 +7,19 @@ ClockDisplay::ClockDisplay() {
   _frameTimer = 0;
 
   _frameIndex = 0;
-  _currentAnimation = sevenOhSixThrob;
+  _currentAnimation = middleOutWipe1;
 }
 
 
 void ClockDisplay::setup() {
   // Setup display
+  // _matrix.begin();
+  // _matrix.displayOn();
+  // _matrix.brightness(DEFAULT_BRIGHTNESS);
+  // _matrix.displayClear();
+  // _matrix.blink(0);
+  // _matrix.cacheOn();
   _matrix.begin();
-  _matrix.displayOn();
-  _matrix.brightness(DEFAULT_BRIGHTNESS);
-  _matrix.displayClear();
-  _matrix.blink(0);
-  _matrix.cacheOn();
 
   _frameTimer = 0;
   _stringScrollIndex = 0;
@@ -45,7 +46,7 @@ void ClockDisplay::loop() {
 
 
 void ClockDisplay::playIdleAnimation() {
-  loadAnimation(sevenOhSixThrob);
+  loadAnimation(middleOutWipe1);
   Serial.println("IDLE");
 }
 

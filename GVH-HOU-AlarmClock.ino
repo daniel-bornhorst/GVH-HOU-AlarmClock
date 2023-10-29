@@ -1,16 +1,21 @@
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
+#include "elapsedMillis.h"
+
 
 #define ENCODER_DO_NOT_USE_INTERRUPTS
-#include <Encoder.h>
-#include <Bounce.h>
+//#include <Encoder.h>
+// #include <Bounce.h>
 
+/*
 #include "autonet.h"
 #include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
 #include <NativeEthernetUdp.h>  // use if you have a Wiznet w5100 Ethernet shield
+*/
 
+//#include <Wire.h>
+/*
 #include <Audio.h>
-#include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
@@ -54,21 +59,22 @@ AudioConnection c2(sound0, 0, mixer1, 1);
 AudioConnection c3(mixer1, peak1);
 AudioConnection c4(mixer1, 0, headphones, 0);
 AudioConnection c5(mixer1, 0, headphones, 1);
+*/
 
 // Peripheral Devies
 ClockDisplay display;
-Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
+// Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
 
 // State holders
 ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
 // Buttons
-Bounce sleepButton = Bounce(SLEEP_BUTTON, 100);
-Bounce wakeButton = Bounce(WAKE_BUTTON, 100);  // 5 ms debounce time
-Bounce hourButton = Bounce(HOUR_BUTTON, 100);
-Bounce minuteButton = Bounce(MINUTE_BUTTON, 100);
-Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
+// Bounce sleepButton = Bounce(SLEEP_BUTTON, 100);
+// Bounce wakeButton = Bounce(WAKE_BUTTON, 100);  // 5 ms debounce time
+// Bounce hourButton = Bounce(HOUR_BUTTON, 100);
+// Bounce minuteButton = Bounce(MINUTE_BUTTON, 100);
+// Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
 
 // Timers
 elapsedMillis idleTimeoutTimer;
@@ -110,16 +116,17 @@ void setup() {
   pinMode(tunerLedPinLeft, OUTPUT);
   pinMode(tunerLedPinRight, OUTPUT);
 
+  // Display Setup
+  display.setup();
+  display.setTime(12, 43);
+  display.playIdleAnimation();
+
+/*
   // Ethernet Setup
   Ethernet.begin(mac, ip, ddns, gateway, subnet);
   //Ethernet.begin(mac, ip); // use this if you don't need gateway and subnet
   Udp.begin(localPort);
   autonet.setup(Udp);
-
-  // Display Setup
-  display.setup();
-  display.setTime(12, 43);
-  display.playIdleAnimation();
 
   // SD Card Setup
   SPI.setMOSI(SDCARD_MOSI_PIN);
@@ -136,12 +143,13 @@ void setup() {
   AudioMemory(10);
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.1);
+  */
 }
 
 
 void loop() {
 
-  autonet.loop();
+  // autonet.loop();
   display.loop();
   inputPollingLoop();
   networkLoop();
@@ -173,36 +181,36 @@ void networkLoop() {
 
 void inputPollingLoop() {
   // Check for button presses
-  sleepButton.update();
-  wakeButton.update();
-  hourButton.update();
-  minuteButton.update();
-  snoozButton.update();
+  // sleepButton.update();
+  // wakeButton.update();
+  // hourButton.update();
+  // minuteButton.update();
+  // snoozButton.update();
 
-  if (sleepButton.fallingEdge()) {
-    buttonPressed(SLEEP_BUTTON);
-  } else if (wakeButton.fallingEdge()) {
-    buttonPressed(WAKE_BUTTON);
-  } else if (hourButton.fallingEdge()) {
-    buttonPressed(HOUR_BUTTON);
-  } else if (minuteButton.fallingEdge()) {
-    buttonPressed(MINUTE_BUTTON);
-  } else if (snoozButton.fallingEdge()) {
-    buttonPressed(SNOOZ_BUTTON);
-  }
+  // if (sleepButton.fallingEdge()) {
+  //   buttonPressed(SLEEP_BUTTON);
+  // } else if (wakeButton.fallingEdge()) {
+  //   buttonPressed(WAKE_BUTTON);
+  // } else if (hourButton.fallingEdge()) {
+  //   buttonPressed(HOUR_BUTTON);
+  // } else if (minuteButton.fallingEdge()) {
+  //   buttonPressed(MINUTE_BUTTON);
+  // } else if (snoozButton.fallingEdge()) {
+  //   buttonPressed(SNOOZ_BUTTON);
+  // }
 
   // Poll tuning encoder
   // Only change state if value has changed by a determined amount
-  long newTunerPosition = tunerEncoder.read();
-  if (newTunerPosition != tunerPosition) {
+  // long newTunerPosition = tunerEncoder.read();
+  // if (newTunerPosition != tunerPosition) {
     
-    clockState = TUNER;
-    idleTimeoutTime = tunerModeTimeoutTime;
-    idleTimeoutTimer = 0;
+  //   clockState = TUNER;
+  //   idleTimeoutTime = tunerModeTimeoutTime;
+  //   idleTimeoutTimer = 0;
 
-    tunerPosition = newTunerPosition;
-    Serial.println(newTunerPosition);
-  }
+  //   tunerPosition = newTunerPosition;
+  //   Serial.println(newTunerPosition);
+  // }
 }
 
 
@@ -214,17 +222,17 @@ void tunerLoop() {
 
 
 void musicStateLoop() {
-  if (clockState == MUSIC) {
-    if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
+  // if (clockState == MUSIC) {
+  //   if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
-      vuMeterRefreshTimer = 0;
+  //     vuMeterRefreshTimer = 0;
 
-      if (peak1.available()) {
-        uint8_t peakScaled = peak1.read() * 70.0;
-        display.setVuMeter(peakScaled);
-      }
-    }
-  }
+  //     if (peak1.available()) {
+  //       uint8_t peakScaled = peak1.read() * 70.0;
+  //       display.setVuMeter(peakScaled);
+  //     }
+  //   }
+  // }
 }
 
 
@@ -234,7 +242,7 @@ void buttonPressed(ClockInput pressedButton) {
 
   if (pressedButton == SLEEP_BUTTON) {
     clockState = SLEEP;
-    playWav1.play("GLADIATORS.WAV");
+    // playWav1.play("GLADIATORS.WAV");
     display.playSleepAnimation();
   } 
   else if (pressedButton == WAKE_BUTTON) {
@@ -242,30 +250,30 @@ void buttonPressed(ClockInput pressedButton) {
     clockState = MUSIC;
     vuMeterRefreshTimer = 0;
     //playWav1.play("DEMNTEDCIRCUS.WAV");
-    playWav1.play("LONGDJENT.WAV");
+    // playWav1.play("LONGDJENT.WAV");
     //playWav1.play("ALARM2.WAV");
     display.playWakeAnimation();
   } 
   else if (pressedButton == HOUR_BUTTON) {
     clockState = HOUR;
-    playWav1.play("3SECSAWSWEEP.WAV");
+    // playWav1.play("3SECSAWSWEEP.WAV");
     display.playHourAnimation();
   } 
   else if (pressedButton == MINUTE_BUTTON) {
     clockState = MINUTE;
-    playWav1.play("3SECSINESWEEP.WAV");
+    // playWav1.play("3SECSINESWEEP.WAV");
     //display.scrollString("Gordon KILLED JARED");
     //display.scrollString("yo");
     display.playMinuteAnimation();
   } 
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
-    playWav1.stop();
+    // playWav1.stop();
     display.playSnoozAnimation();
   }
 
-  Serial.print("audio usage:  ");
-  Serial.println(AudioProcessorUsage());
+  // Serial.print("audio usage:  ");
+  // Serial.println(AudioProcessorUsage());
 }
 
 

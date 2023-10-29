@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include "ClockGlobals.h"
 #include "ClockDisplayAnimations.h"
+#include "elapsedMillis.h"
+
 
 // #include <Wire.h>
 // #include <Adafruit_GFX.h>
