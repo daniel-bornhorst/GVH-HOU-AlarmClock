@@ -58,7 +58,7 @@ public:
 
 private:
 
-  HT16K33Driver _matrix;
+  HT16K33Driver _matrix = HT16K33Driver();
   elapsedMillis _frameTimer;
 
   int _hours;

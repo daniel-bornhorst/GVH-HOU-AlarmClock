@@ -4,7 +4,7 @@
 
 
 #define ENCODER_DO_NOT_USE_INTERRUPTS
-//#include <Encoder.h>
+// #include <Encoder.h>
 // #include <Bounce.h>
 
 /*
@@ -106,20 +106,30 @@ void setup() {
   Serial.begin(9600);
   delay(1000);
 
-  // Button Setup
-  pinMode(SLEEP_BUTTON, INPUT_PULLUP);
-  pinMode(WAKE_BUTTON, INPUT_PULLUP);
-  pinMode(HOUR_BUTTON, INPUT_PULLUP);
-  pinMode(MINUTE_BUTTON, INPUT_PULLUP);
-  pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
 
-  pinMode(tunerLedPinLeft, OUTPUT);
-  pinMode(tunerLedPinRight, OUTPUT);
+  Serial.println("In the beginning..");
+  delay(1000);
+
+  // Button Setup
+  // pinMode(SLEEP_BUTTON, INPUT_PULLUP);
+  // pinMode(WAKE_BUTTON, INPUT_PULLUP);
+  // pinMode(HOUR_BUTTON, INPUT_PULLUP);
+  // pinMode(MINUTE_BUTTON, INPUT_PULLUP);
+  // pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
+
+  // pinMode(tunerLedPinLeft, OUTPUT);
+  // pinMode(tunerLedPinRight, OUTPUT);
 
   // Display Setup
   display.setup();
   display.setTime(12, 43);
   display.playIdleAnimation();
+
+  // while(1) {
+  //   Serial.println("go");
+  //   delay(1000);
+  // }
+
 
 /*
   // Ethernet Setup

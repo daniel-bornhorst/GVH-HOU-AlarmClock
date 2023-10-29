@@ -19,7 +19,9 @@ void ClockDisplay::setup() {
   // _matrix.displayClear();
   // _matrix.blink(0);
   // _matrix.cacheOn();
+  Serial.println("pre matrix begin");
   _matrix.begin();
+  Serial.println("post matrix begin");
 
   _frameTimer = 0;
   _stringScrollIndex = 0;
@@ -46,7 +48,8 @@ void ClockDisplay::loop() {
 
 
 void ClockDisplay::playIdleAnimation() {
-  loadAnimation(middleOutWipe1);
+  Serial.println("pre idle animation");
+  loadAnimation(sleepAnimationWithRandom);
   Serial.println("IDLE");
 }
 
@@ -191,7 +194,7 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
       _anmiationRepetitions++;
       
       if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
-        loadAnimation(sevenOhSixThrob);
+        playIdleAnimation();
         return;
       }
 
