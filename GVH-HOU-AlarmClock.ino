@@ -5,7 +5,7 @@
 
 #define ENCODER_DO_NOT_USE_INTERRUPTS
 // #include <Encoder.h>
-// #include <Bounce.h>
+#include <Bounce2.h>
 
 /*
 #include "autonet.h"
@@ -70,11 +70,11 @@ ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
 // Buttons
-// Bounce sleepButton = Bounce(SLEEP_BUTTON, 100);
-// Bounce wakeButton = Bounce(WAKE_BUTTON, 100);  // 5 ms debounce time
-// Bounce hourButton = Bounce(HOUR_BUTTON, 100);
-// Bounce minuteButton = Bounce(MINUTE_BUTTON, 100);
-// Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
+Bounce sleepButton = Bounce();
+Bounce wakeButton = Bounce();
+Bounce hourButton = Bounce();
+Bounce minuteButton = Bounce();
+Bounce snoozButton = Bounce();
 
 // Timers
 elapsedMillis idleTimeoutTimer;
@@ -82,6 +82,7 @@ elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
 elapsedMillis ledToggleTimer;
 elapsedMillis ledOnTimeTimer;
+elapsedMillis modeSwitchPollTimer;
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
@@ -92,6 +93,7 @@ long unsigned int glitchTimeoutTime = 240000; // 4 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 24;
+long unsigned const int modeSwitchPollRate = 10;
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
@@ -111,6 +113,18 @@ void setup() {
   delay(1000);
 
   // Button Setup
+  sleepButton.attach(SLEEP_BUTTON, INPUT_PULLUP);
+  wakeButton.attach(WAKE_BUTTON, INPUT_PULLUP);
+  hourButton.attach(HOUR_BUTTON, INPUT_PULLUP);
+  minuteButton.attach(MINUTE_BUTTON, INPUT_PULLUP);
+  snoozButton.attach(SNOOZ_BUTTON, INPUT_PULLUP);
+
+  sleepButton.interval(50);
+  wakeButton.interval(50);
+  hourButton.interval(50);
+  minuteButton.interval(50);
+  snoozButton.interval(50);
+
   // pinMode(SLEEP_BUTTON, INPUT_PULLUP);
   // pinMode(WAKE_BUTTON, INPUT_PULLUP);
   // pinMode(HOUR_BUTTON, INPUT_PULLUP);
@@ -119,6 +133,8 @@ void setup() {
 
   // pinMode(tunerLedPinLeft, OUTPUT);
   // pinMode(tunerLedPinRight, OUTPUT);
+
+  pinMode(MODE_SWITCH, INPUT);
 
   // Display Setup
   display.setup();
@@ -191,23 +207,23 @@ void networkLoop() {
 
 void inputPollingLoop() {
   // Check for button presses
-  // sleepButton.update();
-  // wakeButton.update();
-  // hourButton.update();
-  // minuteButton.update();
-  // snoozButton.update();
+  sleepButton.update();
+  wakeButton.update();
+  hourButton.update();
+  minuteButton.update();
+  snoozButton.update();
 
-  // if (sleepButton.fallingEdge()) {
-  //   buttonPressed(SLEEP_BUTTON);
-  // } else if (wakeButton.fallingEdge()) {
-  //   buttonPressed(WAKE_BUTTON);
-  // } else if (hourButton.fallingEdge()) {
-  //   buttonPressed(HOUR_BUTTON);
-  // } else if (minuteButton.fallingEdge()) {
-  //   buttonPressed(MINUTE_BUTTON);
-  // } else if (snoozButton.fallingEdge()) {
-  //   buttonPressed(SNOOZ_BUTTON);
-  // }
+  if (sleepButton.fell()) {
+    buttonPressed(SLEEP_BUTTON);
+  } else if (wakeButton.fell()) {
+    buttonPressed(WAKE_BUTTON);
+  } else if (hourButton.fell()) {
+    buttonPressed(HOUR_BUTTON);
+  } else if (minuteButton.fell()) {
+    buttonPressed(MINUTE_BUTTON);
+  } else if (snoozButton.fell()) {
+    buttonPressed(SNOOZ_BUTTON);
+  }
 
   // Poll tuning encoder
   // Only change state if value has changed by a determined amount
@@ -221,6 +237,31 @@ void inputPollingLoop() {
   //   tunerPosition = newTunerPosition;
   //   Serial.println(newTunerPosition);
   // }
+
+  if (modeSwitchPollTimer >= modeSwitchPollRate) {
+    int switchVal = analogRead(MODE_SWITCH);
+    ToggleSwitchState newSwitchState;
+
+    if (switchVal < 50) {
+      newSwitchState = OFF_SWITCH_STATE;
+    }
+    else if (switchVal < 300) {
+      newSwitchState = ON_SWITCH_STATE;
+    }
+    else if (switchVal < 600) {
+      newSwitchState = MUSIC_SWITCH_STATE;
+    }
+    else {
+      newSwitchState = ALARM_SWITCH_STATE;
+    }
+
+    toggleSwitchState = newSwitchState;
+
+    // Serial.print("Switch val: ");
+    // Serial.print(toggleSwitchState);
+    // Serial.println();
+    modeSwitchPollTimer = 0;
+  }
 }
 
 
@@ -279,7 +320,8 @@ void buttonPressed(ClockInput pressedButton) {
   else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
     // playWav1.stop();
-    display.playSnoozAnimation();
+    //display.playSnoozAnimation();
+    display.playSnoozQueueAnimation(toggleSwitchState);
   }
 
   // Serial.print("audio usage:  ");

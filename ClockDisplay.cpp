@@ -7,7 +7,7 @@ ClockDisplay::ClockDisplay() {
   _frameTimer = 0;
 
   _frameIndex = 0;
-  _currentAnimation = middleOutWipe1;
+  _currentAnimation = sevenOhSixThrob;
 }
 
 
@@ -49,7 +49,7 @@ void ClockDisplay::loop() {
 
 void ClockDisplay::playIdleAnimation() {
   Serial.println("pre idle animation");
-  loadAnimation(sleepAnimationWithRandom);
+  loadAnimation(sevenOhSixThrob);
   Serial.println("IDLE");
 }
 
@@ -61,7 +61,7 @@ void ClockDisplay::playGlitchAnimation() {
 
 
 void ClockDisplay::playSleepAnimation() {
-  loadAnimation(middleOutWipe1);
+  loadAnimation(sleepAnimationWithRandom);
   Serial.println("Sleep Button");
 }
 
@@ -87,8 +87,32 @@ void ClockDisplay::playMinuteAnimation() {
 
 
 void ClockDisplay::playSnoozAnimation() {
-  loadAnimation(circleAnimation1);
+  loadAnimation(middleOutWipe1);
   Serial.println("Snooz Button");
+}
+
+
+void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
+  loadAnimation(middleOutWipe1);
+
+  switch (animationIndex) {
+    case 0:
+      loadAnimation(middleOutWipe1);
+      break;
+    case 1:
+      loadAnimation(circleAnimation2);
+      break;
+    case 2:
+      loadAnimation(circleAnimation3);
+      break;
+    case 3:
+      loadAnimation(sevenOhSixWipeDown);
+      break;
+  }
+
+  Serial.print("Snooz Button ");
+  Serial.print(animationIndex);
+  Serial.println();
 }
 
 

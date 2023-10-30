@@ -41,6 +41,7 @@ public:
   void playHourAnimation();
   void playMinuteAnimation();
   void playSnoozAnimation();
+  void playSnoozQueueAnimation(int animationIndex);
 
   void setVuMeter(uint8_t level);
 
