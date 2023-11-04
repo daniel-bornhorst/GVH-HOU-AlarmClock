@@ -5,9 +5,10 @@
 #include <Encoder.h>
 #include <Bounce.h>
 
-#include "autonet.h"
+//#include "autonet.h"
 #include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
 #include <NativeEthernetUdp.h>  // use if you have a Wiznet w5100 Ethernet shield
+#include "OSCMessage.h"
 
 #include <Audio.h>
 #include <Wire.h>
@@ -20,24 +21,31 @@
 #define SDCARD_SCK_PIN 13   // not actually used
 
 // Network Stuff
+EthernetUDP Udp;
+
 //This device's unique IP and Mac Address
-IPAddress ip(10, 32, 17, 62);
-byte mac[] = { 0x81, 0x1C, 0xBD, 0xC3, 0x33, 0x67 };
+// IPAddress ip(10, 32, 16, 200);
+// byte mac[] = { 0x81, 0x1C, 0xBD, 0xC3, 0x33, 0x67 };
+// you can find this written on the board of some Arduino Ethernets or shields
+byte mac[] = { 0x66, 0x6D, 0x66, 0x69, 0x66, 0x67 } ;
+byte ip[] = { 10, 32, 16, 200 };
+
+char arduino_name[50] = "d8b94bbb-3b48-421a-b449-51bf9d4dfb64";  //UUID
+int localPort = 7777;                                        // autonet expects to see incoming OSC on port 7777
 
 //define outgoing IP and port to send OSC messages to a server
-IPAddress remote_ip(10, 32, 16, 10);  //Cathy's temporary test server
-const unsigned int remote_port = 6666;
+IPAddress showController_ip(10, 32, 16, 10);  //Cathy's temporary test server
+const unsigned int showController_port = 6666;
 //stuff we need if we're not on 10.42.16.*
 byte ddns[] = { 10, 32, 17, 1 };
 byte *gateway = ddns;
 byte subnet[] = { 255, 255, 240, 0 };
 
-char ard_name[50] = "d8b94bbb-3b48-421a-b449-51bf9d4dfb64";  //UUID
-int localPort = 7777;                                        // autonet expects to see incoming OSC on port 7777
-EthernetUDP Udp;
+// IP and Port of OSC destination
+IPAddress ip1(10, 32, 95, 33); // powercouple
+const unsigned int outPort = 7777;
 
 //create your Autonet object, pass in the IP and MAC address from above, plus custom stuff for our new show controller
-Autonet autonet(ip, mac, ard_name, ddns, subnet, remote_ip, remote_port, 1);
 int is_connected = 1;          // 0 = broken connection, 1 = connected
 #define RETRY_TIME 5000        // how often to retry broken UDP connections
 unsigned long retrytimer = 0;  // timer for the UDP retries
@@ -76,6 +84,7 @@ elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
 elapsedMillis ledToggleTimer;
 elapsedMillis ledOnTimeTimer;
+elapsedMillis watchdogTimer;
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
@@ -86,6 +95,7 @@ long unsigned int glitchTimeoutTime = 240000; // 4 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 24;
+long unsigned const int watchdogInterval = 30000; // 30 secnds
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
@@ -111,10 +121,9 @@ void setup() {
   pinMode(tunerLedPinRight, OUTPUT);
 
   // Ethernet Setup
-  Ethernet.begin(mac, ip, ddns, gateway, subnet);
-  //Ethernet.begin(mac, ip); // use this if you don't need gateway and subnet
+  //Ethernet.begin(mac, ip, ddns, gateway, subnet);
+  Ethernet.begin(mac, ip); // use this if you don't need gateway and subnet
   Udp.begin(localPort);
-  autonet.setup(Udp);
 
   // Display Setup
   display.setup();
@@ -141,7 +150,7 @@ void setup() {
 
 void loop() {
 
-  autonet.loop();
+  //autonet.loop();
   display.loop();
   inputPollingLoop();
   networkLoop();
@@ -168,6 +177,19 @@ void loop() {
 
 
 void networkLoop() {
+  if (watchdogTimer >= watchdogInterval) {
+
+    OSCMessage msg("/watchdog_update");
+    msg.add("OKAY");
+    msg.add(arduino_name);
+    msg.add(int(0)); // or you can figure uptime in seconds on your own, and insert it here
+    Udp.beginPacket(showController_ip, showController_port);
+    msg.send(Udp); // send the bytes to the SLIP stream
+    Udp.endPacket(); //mark the end of the packet
+    msg.empty(); // free space occupied by message 
+
+    watchdogTimer = 0;
+  }
 }
 
 
@@ -264,8 +286,21 @@ void buttonPressed(ClockInput pressedButton) {
     display.playSnoozAnimation();
   }
 
+  sendOSC();
+
   Serial.print("audio usage:  ");
   Serial.println(AudioProcessorUsage());
+}
+
+
+void sendOSC() {
+  OSCMessage msg("/example");
+  msg.add(1);
+  Udp.beginPacket(ip1, outPort);
+  msg.send(Udp);
+  Udp.endPacket(); // mark the end of the OSC Packet
+  msg.empty(); // free space occupied by message
+  Serial.println("sent");
 }
 
 
