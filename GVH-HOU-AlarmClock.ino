@@ -177,6 +177,8 @@ void loop() {
 
 
 void networkLoop() {
+
+  // Pet the watchdog
   if (watchdogTimer >= watchdogInterval) {
 
     OSCMessage msg("/watchdog_update");
@@ -190,6 +192,65 @@ void networkLoop() {
 
     watchdogTimer = 0;
   }
+
+  // Check for incoming OSC messages
+  OSCMessage msgIN;
+  int size;
+  if ((size = Udp.parsePacket()) > 0) {
+    while (size--) {
+      msgIN.fill(Udp.read());
+    }
+    if (!msgIN.hasError()) {
+
+      digitalWrite(tunerLedPinLeft, ledToggle);
+      digitalWrite(tunerLedPinRight, ledToggle);
+      ledToggle = !ledToggle;
+
+      msgIN.route("/GordoClock/Display", oscSetDisplay);
+      // msgIN.route("/GordoClock/Blink", oscBlinkColon);
+      // msgIN.route("/GordoClock/Time", oscSetTime);
+
+    }
+  }
+}
+
+void oscSetDisplay(OSCMessage &msg, int addrOffset) {
+
+#ifdef  DEBUG
+  Serial.println("SET DISPLAY RECEIVED");
+#endif
+
+  idleTimeoutTimer = 0;
+  clockState = OSCDISPLAY;
+
+  char str[msg.getDataLength(0)];
+
+  String message;
+  if (msg.isString(0)) {
+    Serial.print("OSC STR: ");
+    msg.getString(0, str);
+    message = String(str);
+    Serial.println(message);
+  }
+  else if (msg.isInt(0)) { //only if theres a number
+    Serial.print("OSC INT: ");
+    message = String(msg.getInt(0));
+    Serial.println(message);
+  } 
+  else {
+    //error = 0; //trow an error
+  }
+
+  display.clear();
+  display.scrollString(message);
+
+  String msgText = "/GordoClock/Display";
+  OSCMessage msgOUT(msgText.c_str());
+  msgOUT.add(str); // send TRUE we got the Foward Message
+  Udp.beginPacket(Udp.remoteIP(), outPort);
+  msgOUT.send(Udp);
+  Udp.endPacket();
+  msgOUT.empty();
 }
 
 

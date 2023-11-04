@@ -12,7 +12,8 @@ typedef enum ClockState
   SNOOZ,
   MUSIC,
   ACTUAL_TIME,
-  TUNER
+  TUNER,
+  OSCDISPLAY
 } clock_state_;
 
 // Represents the available user inputs on the clock
