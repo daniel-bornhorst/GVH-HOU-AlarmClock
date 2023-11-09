@@ -49,6 +49,7 @@ public:
 
   void displayInt(int displayVal);
   void displayString(String displayString);
+  void displayTime(int hours = 7, int minutes = 6);
 
   // Member functions
   void setTime(int hours, int minutes); // Set the time

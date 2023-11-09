@@ -74,8 +74,7 @@ void ClockDisplay::playWakeAnimation() {
 
 void ClockDisplay::playHourAnimation() {
   //loadAnimation(middleOutWipe1);
-  //loadAnimation(sevenOhSixHour);
-  loadAnimation(diagonalWipe1);
+  loadAnimation(sevenOhSixHour);
   Serial.println("Hour Button");
 }
 
@@ -106,7 +105,7 @@ void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
       loadAnimation(circleAnimation3);
       break;
     case 3:
-      loadAnimation(sevenOhSixWipeDown);
+      loadAnimation(diagonalWipe1);
       break;
   }
 
@@ -139,6 +138,10 @@ void ClockDisplay::displayString(String displayString) {
   _matrix.displayChars(chars);
 }
 
+void ClockDisplay::displayTime(int hours, int minutes) {
+  setDisplayState(MANUAL_STATIC);
+  _matrix.displayTime(hours, minutes, true, false); // display hour,s minutes, colon, and no leading zero
+}
 
 void ClockDisplay::setTime(int hours, int minutes) {
   _hours = hours;

@@ -70,11 +70,11 @@ ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
 // Buttons
-Bounce sleepButton = Bounce();
-Bounce wakeButton = Bounce();
-Bounce hourButton = Bounce();
-Bounce minuteButton = Bounce();
-Bounce snoozButton = Bounce();
+Bounce2::Button sleepButton = Bounce2::Button();
+Bounce2::Button wakeButton = Bounce2::Button();
+Bounce2::Button hourButton = Bounce2::Button();
+Bounce2::Button minuteButton = Bounce2::Button();
+Bounce2::Button snoozButton = Bounce2::Button();
 
 // Timers
 elapsedMillis idleTimeoutTimer;
@@ -109,9 +109,6 @@ void setup() {
   delay(1000);
 
 
-  Serial.println("In the beginning..");
-  delay(1000);
-
   // Button Setup
   sleepButton.attach(SLEEP_BUTTON, INPUT_PULLUP);
   wakeButton.attach(WAKE_BUTTON, INPUT_PULLUP);
@@ -124,6 +121,13 @@ void setup() {
   hourButton.interval(50);
   minuteButton.interval(50);
   snoozButton.interval(50);
+
+  sleepButton.setPressedState(LOW); 
+  wakeButton.setPressedState(LOW);
+  hourButton.setPressedState(LOW);
+  minuteButton.setPressedState(LOW);
+  snoozButton.setPressedState(LOW);
+  
 
   // pinMode(SLEEP_BUTTON, INPUT_PULLUP);
   // pinMode(WAKE_BUTTON, INPUT_PULLUP);
@@ -170,17 +174,31 @@ void setup() {
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.1);
   */
+
+  delay(1000);
+
+  //simple mode unless these three buttons are held during startup
+  // if ( !(sleepButton.isPressed() && minuteButton.isPressed() && snoozButton.isPressed()) ) { 
+  //   clockState = SIMPLE_MODE;
+  //   display.displayTime();
+  //   Serial.println("WE IN SIMP MODE YO!");
+  // }
 }
 
 
 void loop() {
 
   // autonet.loop();
-  display.loop();
-  inputPollingLoop();
-  networkLoop();
+
+  if (clockState != SIMPLE_MODE) {
+    display.loop();
+    inputPollingLoop();
+    networkLoop();
+  }
 
   switch (clockState) {
+    case SIMPLE_MODE:
+      break;
     case IDLE:
       checkForGlitchTimeout();
       break;

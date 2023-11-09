@@ -3,6 +3,7 @@
 
 typedef enum ClockState
 {
+  SIMPLE_MODE,
   IDLE,
   GLITCH,
   SLEEP,
