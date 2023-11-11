@@ -42,7 +42,7 @@ byte *gateway = ddns;
 byte subnet[] = { 255, 255, 240, 0 };
 
 // IP and Port of OSC destination
-IPAddress ip1(10, 32, 95, 33); // powercouple
+IPAddress ip1(10, 32, 16, 128); // powercouple
 const unsigned int outPort = 7777;
 
 //create your Autonet object, pass in the IP and MAC address from above, plus custom stuff for our new show controller
