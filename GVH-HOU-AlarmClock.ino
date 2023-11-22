@@ -27,11 +27,11 @@ EthernetUDP Udp;
 // IPAddress ip(10, 32, 16, 200);
 // byte mac[] = { 0x81, 0x1C, 0xBD, 0xC3, 0x33, 0x67 };
 // you can find this written on the board of some Arduino Ethernets or shields
-byte mac[] = { 0x66, 0x6D, 0x66, 0x69, 0x66, 0x67 } ;
+byte mac[] = { 0x66, 0x6D, 0x66, 0x69, 0x66, 0x67 };
 byte ip[] = { 10, 32, 16, 200 };
 
 char arduino_name[50] = "d8b94bbb-3b48-421a-b449-51bf9d4dfb64";  //UUID
-int localPort = 7777;                                        // autonet expects to see incoming OSC on port 7777
+int localPort = 7777;                                            // autonet expects to see incoming OSC on port 7777
 
 //define outgoing IP and port to send OSC messages to a server
 IPAddress showController_ip(10, 32, 16, 10);  //Cathy's temporary test server
@@ -42,7 +42,7 @@ byte *gateway = ddns;
 byte subnet[] = { 255, 255, 240, 0 };
 
 // IP and Port of OSC destination
-IPAddress ip1(10, 32, 16, 128); // powercouple
+IPAddress ip1(10, 32, 16, 128);  // powercouple
 const unsigned int outPort = 7777;
 
 //create your Autonet object, pass in the IP and MAC address from above, plus custom stuff for our new show controller
@@ -90,16 +90,16 @@ elapsedMillis watchdogTimer;
 const int defaultIdleTimeoutTime = 5000;
 long unsigned int tunerModeTimeoutTime = 3000;
 //long unsigned int glitchTimeoutTime = 600000; // 10 min
-long unsigned int glitchTimeoutTime = 240000; // 4 min
+long unsigned int glitchTimeoutTime = 240000;  // 4 min
 //long unsigned int glitchTimeoutTime = 60000; // 1 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 24;
-long unsigned const int watchdogInterval = 30000; // 30 secnds
+long unsigned const int watchdogInterval = 30000;  // 30 secnds
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
-long tunerPosition  = 0;
+long tunerPosition = 0;
 long unsigned int ledToggleTime = 0;
 bool ledToggle = false;
 
@@ -122,7 +122,7 @@ void setup() {
 
   // Ethernet Setup
   //Ethernet.begin(mac, ip, ddns, gateway, subnet);
-  Ethernet.begin(mac, ip); // use this if you don't need gateway and subnet
+  Ethernet.begin(mac, ip);  // use this if you don't need gateway and subnet
   Udp.begin(localPort);
 
   // Display Setup
@@ -184,11 +184,11 @@ void networkLoop() {
     OSCMessage msg("/watchdog_update");
     msg.add("OKAY");
     msg.add(arduino_name);
-    msg.add(int(0)); // or you can figure uptime in seconds on your own, and insert it here
+    msg.add(int(0));  // or you can figure uptime in seconds on your own, and insert it here
     Udp.beginPacket(showController_ip, showController_port);
-    msg.send(Udp); // send the bytes to the SLIP stream
-    Udp.endPacket(); //mark the end of the packet
-    msg.empty(); // free space occupied by message 
+    msg.send(Udp);    // send the bytes to the SLIP stream
+    Udp.endPacket();  //mark the end of the packet
+    msg.empty();      // free space occupied by message
 
     watchdogTimer = 0;
   }
@@ -209,14 +209,13 @@ void networkLoop() {
       msgIN.route("/GordoClock/Display", oscSetDisplay);
       // msgIN.route("/GordoClock/Blink", oscBlinkColon);
       // msgIN.route("/GordoClock/Time", oscSetTime);
-
     }
   }
 }
 
 void oscSetDisplay(OSCMessage &msg, int addrOffset) {
 
-#ifdef  DEBUG
+#ifdef DEBUG
   Serial.println("SET DISPLAY RECEIVED");
 #endif
 
@@ -231,13 +230,11 @@ void oscSetDisplay(OSCMessage &msg, int addrOffset) {
     msg.getString(0, str);
     message = String(str);
     Serial.println(message);
-  }
-  else if (msg.isInt(0)) { //only if theres a number
+  } else if (msg.isInt(0)) {  //only if theres a number
     Serial.print("OSC INT: ");
     message = String(msg.getInt(0));
     Serial.println(message);
-  } 
-  else {
+  } else {
     //error = 0; //trow an error
   }
 
@@ -246,7 +243,7 @@ void oscSetDisplay(OSCMessage &msg, int addrOffset) {
 
   String msgText = "/GordoClock/Display";
   OSCMessage msgOUT(msgText.c_str());
-  msgOUT.add(str); // send TRUE we got the Foward Message
+  msgOUT.add(str);  // send TRUE we got the Foward Message
   Udp.beginPacket(Udp.remoteIP(), outPort);
   msgOUT.send(Udp);
   Udp.endPacket();
@@ -278,7 +275,7 @@ void inputPollingLoop() {
   // Only change state if value has changed by a determined amount
   long newTunerPosition = tunerEncoder.read();
   if (newTunerPosition != tunerPosition) {
-    
+
     clockState = TUNER;
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeoutTimer = 0;
@@ -291,8 +288,6 @@ void inputPollingLoop() {
 
 void tunerLoop() {
   display.displayInt(tunerPosition);
-
-
 }
 
 
@@ -319,8 +314,7 @@ void buttonPressed(ClockInput pressedButton) {
     clockState = SLEEP;
     playWav1.play("GLADIATORS.WAV");
     display.playSleepAnimation();
-  } 
-  else if (pressedButton == WAKE_BUTTON) {
+  } else if (pressedButton == WAKE_BUTTON) {
     //clockState = WAKE;
     clockState = MUSIC;
     vuMeterRefreshTimer = 0;
@@ -328,20 +322,17 @@ void buttonPressed(ClockInput pressedButton) {
     playWav1.play("LONGDJENT.WAV");
     //playWav1.play("ALARM2.WAV");
     display.playWakeAnimation();
-  } 
-  else if (pressedButton == HOUR_BUTTON) {
+  } else if (pressedButton == HOUR_BUTTON) {
     clockState = HOUR;
     playWav1.play("3SECSAWSWEEP.WAV");
     display.playHourAnimation();
-  } 
-  else if (pressedButton == MINUTE_BUTTON) {
+  } else if (pressedButton == MINUTE_BUTTON) {
     clockState = MINUTE;
     playWav1.play("3SECSINESWEEP.WAV");
     //display.scrollString("Gordon KILLED JARED");
     //display.scrollString("yo");
     display.playMinuteAnimation();
-  } 
-  else if (pressedButton == SNOOZ_BUTTON) {
+  } else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
     playWav1.stop();
     display.playSnoozAnimation();
@@ -359,8 +350,8 @@ void sendOSC() {
   msg.add(1);
   Udp.beginPacket(ip1, outPort);
   msg.send(Udp);
-  Udp.endPacket(); // mark the end of the OSC Packet
-  msg.empty(); // free space occupied by message
+  Udp.endPacket();  // mark the end of the OSC Packet
+  msg.empty();      // free space occupied by message
   Serial.println("sent");
 }
 
