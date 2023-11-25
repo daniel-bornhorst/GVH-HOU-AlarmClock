@@ -8,9 +8,15 @@
 //          http://www.adafruit.com/products/1002
 //     URL: https://github.com/RobTillaart/HT16K33.git
 
+//#define ARDUINO_TEENSY41 1
 
 #include "Arduino.h"
+
+#ifdef ARDUINO_TEENSY41
 #include <i2c_device.h>
+#else
+#include "Wire.h"
+#endif
 
 
 #define HT16K33_LIB_VERSION         (F("0.3.9"))
@@ -43,7 +49,11 @@
 class HT16K33Driver
 {
 public:
+#ifdef ARDUINO_TEENSY41
   HT16K33Driver(const uint8_t address = 0x70);   //  0x70 .. 0x77
+#else
+  HT16K33Driver(const uint8_t address = 0x70, TwoWire *wire = &Wire);
+#endif
 
 #if defined (ESP8266) || defined(ESP32)
   bool    begin(uint8_t sda, uint8_t scl);
@@ -148,9 +158,15 @@ private:
   uint8_t endTransmission(int stop = true);
   void finish();
 
+
+  #ifdef ARDUINO_TEENSY41
   //I2CMaster& master = Master;   // I2C 0
   //I2CMaster& master = Master1;  // I2C 1
   I2CMaster& master = Master2;    // I2C 2
+  #else
+  TwoWire*  _wire;
+  #endif
+
   uint8_t write_address = 0;
   size_t tx_next_byte_to_write = 0;
   static const uint32_t timeout_millis = 200;

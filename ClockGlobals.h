@@ -1,8 +1,12 @@
 #ifndef ClockGlobals_h
 #define ClockGlobals_h
 
+//#define ARDUINO_TEENSY41 1
+
 typedef enum ClockState
 {
+  SIMPLE_MODE,
+  SIMPLE_BREATH_MODE,
   IDLE,
   GLITCH,
   SLEEP,
@@ -18,6 +22,9 @@ typedef enum ClockState
 
 // Represents the available user inputs on the clock
 // the values are the teensy pins connected the input
+#ifdef ARDUINO_TEENSY41
+
+// Pin Values for Teensy
 typedef enum ClockInput
 {
   SLEEP_BUTTON = 36,
@@ -28,6 +35,20 @@ typedef enum ClockInput
   MODE_SWITCH = 38,
   TUNING_POT = A12
 } clock_input_;
+#else
+
+// Pin Values for QTPY
+typedef enum ClockInput
+{
+  SLEEP_BUTTON = 3,
+  WAKE_BUTTON = 1,
+  HOUR_BUTTON = 2,
+  MINUTE_BUTTON = 8,
+  SNOOZ_BUTTON = 10,
+  MODE_SWITCH = A0,
+  TUNING_POT = A1
+} clock_input_;
+#endif
 
 // Represents the different states of the four way toggle
 typedef enum ToggleSwitchState

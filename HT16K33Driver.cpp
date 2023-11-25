@@ -74,10 +74,19 @@ static const uint8_t charmap[] = {  //  TODO PROGMEM = slower?
 //
 //  CONSTRUCTOR
 //
+#ifdef ARDUINO_TEENSY41
 HT16K33Driver::HT16K33Driver(const uint8_t address)
 {
   _address = address;
 }
+#else
+HT16K33Driver::HT16K33Driver(const uint8_t address, TwoWire *wire)
+{
+  _address = address;
+  _wire = wire;
+}
+#endif
+
 
 
 #if defined (ESP8266) || defined(ESP32)
@@ -98,17 +107,30 @@ bool HT16K33Driver::begin(uint8_t sda, uint8_t scl)
 
 bool HT16K33Driver::begin()
 {
+  #ifdef ARDUINO_TEENSY41
   master.begin(master_frequency);
+  #else
+  _wire->begin();
+  #endif
   if (! isConnected()) return false;
   reset();
   return true;
 }
 
+#ifdef ARDUINO_TEENSY41
 bool HT16K33Driver::isConnected()
 {
   beginTransmission(_address);
   return (0 == endTransmission());
 }
+#else
+bool HT16K33Driver::isConnected()
+{
+  _wire->beginTransmission(_address);
+  return (0 == _wire->endTransmission());
+}
+#endif
+
 
 
 void HT16K33Driver::reset()
@@ -643,29 +665,51 @@ void HT16K33Driver::_refresh()
 {
   for (uint8_t pos = 0; pos < 4; pos++)
   {
+    #ifdef ARDUINO_TEENSY41
     beginTransmission(_address);
     write(pos * 2);
     write(_displayCache[pos]);
     endTransmission();
+    #else
+    _wire->beginTransmission(_address);
+    _wire->write(pos * 2);
+    _wire->write(_displayCache[pos]);
+    _wire->endTransmission();
+    #endif
   }
 }
 
 void HT16K33Driver::writeCmd(uint8_t cmd)
 {
+  #ifdef ARDUINO_TEENSY41
   beginTransmission(_address);
   write(cmd);
   endTransmission();
+  #else
+  _wire->beginTransmission(_address);
+  _wire->write(cmd);
+  _wire->endTransmission();
+  #endif
 }
 
 
 void HT16K33Driver::writePos(uint8_t pos, uint8_t mask)
 {
+  #ifdef ARDUINO_TEENSY41
   if (_cache && (_displayCache[pos] == mask)) return;
   beginTransmission(_address);
   write(pos * 2);
   write(mask);
   endTransmission();
   _displayCache[pos] = _cache ? mask : HT16K33_NONE;
+  #else
+  if (_cache && (_displayCache[pos] == mask)) return;
+  _wire->beginTransmission(_address);
+  _wire->write(pos * 2);
+  _wire->write(mask);
+  _wire->endTransmission();
+  _displayCache[pos] = _cache ? mask : HT16K33_NONE;
+  #endif
 }
 
 
@@ -801,6 +845,7 @@ uint8_t HT16K33Driver::getBinaryChar(uint8_t character)
   return 0;
 }
 
+#ifdef ARDUINO_TEENSY41
 void HT16K33Driver::beginTransmission(int address) {
     write_address = (uint8_t)address;
     tx_next_byte_to_write = 0;
@@ -829,5 +874,5 @@ void HT16K33Driver::finish() {
     }
     Serial.println("Timed out waiting for transfer to finish.");
 }
-
+#endif
 //  -- END OF FILE --

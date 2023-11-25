@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include "ClockGlobals.h"
 #include "ClockDisplayAnimations.h"
+#include "elapsedMillis.h"
+
 
 // #include <Wire.h>
 // #include <Adafruit_GFX.h>
@@ -16,6 +18,7 @@ typedef enum DisplayState
 {
   DISPLAY_OFF,
   SCRIPTED_ANIMATION,
+  DYNAMIC_RATE_SCRIPTED_ANIMATION,
   MANUAL_STATIC,
   BUFFER_SCROLL,
   VU_METER
@@ -39,6 +42,7 @@ public:
   void playHourAnimation();
   void playMinuteAnimation();
   void playSnoozAnimation();
+  void playSnoozQueueAnimation(int animationIndex);
 
   void setVuMeter(uint8_t level);
 
@@ -46,24 +50,30 @@ public:
 
   void displayInt(int displayVal);
   void displayString(String displayString);
+  void displayTime(int hours = 7, int minutes = 6);
 
   // Member functions
   void setTime(int hours, int minutes); // Set the time
   void setStringBuffer(String buff);
   void setStringBuffer(int intValBuff);
+  void setRefreshRate(unsigned long newRefreshRate);
   void clear();
 
 
 private:
 
+#ifdef ARDUINO_TEENSY41
   HT16K33Driver _matrix;
+#else
+  HT16K33Driver _matrix = HT16K33Driver();
+#endif
+
   elapsedMillis _frameTimer;
 
   int _hours;
   int _minutes;
 
   DisplayState _displayState = DISPLAY_OFF;
-  int _refreshRate;
 
   // Display Scrolling Variables
   uint8_t _displayBuffer[4];
@@ -76,6 +86,7 @@ private:
   int _frameIndex;
   bool _frameAdvanced = false;
   int _anmiationRepetitions = 0;
+  unsigned long _dynamicRefreshRate = 5;
 
   void setDisplayState(DisplayState newState);
   void scriptedAnimationLoop(bool newAnimation = false);

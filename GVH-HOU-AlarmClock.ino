@@ -1,11 +1,12 @@
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
+#include "elapsedMillis.h"
+#include <Bounce2.h>
 
+#ifdef ARDUINO_TEENSY41  //---------------------------------------------------------------------
 #define ENCODER_DO_NOT_USE_INTERRUPTS
-#include <Encoder.h>
-#include <Bounce.h>
 
-//#include "autonet.h"
+#include <Encoder.h>
 #include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
 #include <NativeEthernetUdp.h>  // use if you have a Wiznet w5100 Ethernet shield
 #include "OSCMessage.h"
@@ -64,19 +65,20 @@ AudioConnection c4(mixer1, 0, headphones, 0);
 AudioConnection c5(mixer1, 0, headphones, 1);
 
 // Peripheral Devies
-ClockDisplay display;
 Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
+#endif  //---------------------------------------------------------------------
+ClockDisplay display;
 
 // State holders
 ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
 
 // Buttons
-Bounce sleepButton = Bounce(SLEEP_BUTTON, 100);
-Bounce wakeButton = Bounce(WAKE_BUTTON, 100);  // 5 ms debounce time
-Bounce hourButton = Bounce(HOUR_BUTTON, 100);
-Bounce minuteButton = Bounce(MINUTE_BUTTON, 100);
-Bounce snoozButton = Bounce(SNOOZ_BUTTON, 100);
+Bounce2::Button sleepButton = Bounce2::Button();
+Bounce2::Button wakeButton = Bounce2::Button();
+Bounce2::Button hourButton = Bounce2::Button();
+Bounce2::Button minuteButton = Bounce2::Button();
+Bounce2::Button snoozButton = Bounce2::Button();
 
 // Timers
 elapsedMillis idleTimeoutTimer;
@@ -84,6 +86,8 @@ elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
 elapsedMillis ledToggleTimer;
 elapsedMillis ledOnTimeTimer;
+elapsedMillis modeSwitchPollTimer;
+elapsedMillis dynamicRefreshUpdateTimer;
 elapsedMillis watchdogTimer;
 
 // Consts
@@ -95,6 +99,8 @@ long unsigned int glitchTimeoutTime = 240000;  // 4 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 24;
+long unsigned const int modeSwitchPollRate = 10;
+long unsigned const int dynamicRefreshUpdateRate = 250;
 long unsigned const int watchdogInterval = 30000;  // 30 secnds
 
 // Variables
@@ -111,51 +117,86 @@ void setup() {
   delay(1000);
 
   // Button Setup
-  pinMode(SLEEP_BUTTON, INPUT_PULLUP);
-  pinMode(WAKE_BUTTON, INPUT_PULLUP);
-  pinMode(HOUR_BUTTON, INPUT_PULLUP);
-  pinMode(MINUTE_BUTTON, INPUT_PULLUP);
-  pinMode(SNOOZ_BUTTON, INPUT_PULLUP);
+  sleepButton.attach(SLEEP_BUTTON, INPUT_PULLUP);
+  wakeButton.attach(WAKE_BUTTON, INPUT_PULLUP);
+  hourButton.attach(HOUR_BUTTON, INPUT_PULLUP);
+  minuteButton.attach(MINUTE_BUTTON, INPUT_PULLUP);
+  snoozButton.attach(SNOOZ_BUTTON, INPUT_PULLUP);
 
-  pinMode(tunerLedPinLeft, OUTPUT);
-  pinMode(tunerLedPinRight, OUTPUT);
+  sleepButton.interval(50);
+  wakeButton.interval(50);
+  hourButton.interval(50);
+  minuteButton.interval(50);
+  snoozButton.interval(50);
 
-  // Ethernet Setup
-  //Ethernet.begin(mac, ip, ddns, gateway, subnet);
-  Ethernet.begin(mac, ip);  // use this if you don't need gateway and subnet
-  Udp.begin(localPort);
+  sleepButton.setPressedState(LOW);
+  wakeButton.setPressedState(LOW);
+  hourButton.setPressedState(LOW);
+  minuteButton.setPressedState(LOW);
+  snoozButton.setPressedState(LOW);
+
+  pinMode(MODE_SWITCH, INPUT);
 
   // Display Setup
   display.setup();
-  display.setTime(12, 43);
+  display.setTime(7, 6);
   display.playIdleAnimation();
+
+  Serial.println("BOOM SHOCK 0");
+
+#ifdef ARDUINO_TEENSY41
+  // Ethernet Setup
+  //Ethernet.begin(mac, ip, ddns, gateway, subnet);
+  Ethernet.begin(mac, ip);  // use this if you don't need gateway and subnet
+  Serial.println("BOOM SHOCK 0.1");
+  Udp.begin(localPort);
+  Serial.println("BOOM SHOCK 0.2");
+
 
   // SD Card Setup
   SPI.setMOSI(SDCARD_MOSI_PIN);
   SPI.setSCK(SDCARD_SCK_PIN);
   if (!(SD.begin(SDCARD_CS_PIN))) {
-    // stop here, but print a message repetitively
-    while (1) {
-      Serial.println("Unable to access the SD card");
-      delay(500);
-    }
+    Serial.println("Unable to access the SD card");
+    delay(500);
   }
 
   // Audio Setup
   AudioMemory(10);
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.1);
+#endif
+
+  delay(1000);
+
+  Serial.println("BOOM SHOCK 1");
+
+  // Simple Mode Check
+  // Start in simple mode unless these three buttons are held during boot
+  // if ( !(sleepButton.isPressed() && minuteButton.isPressed() && snoozButton.isPressed()) ) {
+  //   clockState = SIMPLE_MODE;
+  //   display.displayTime();
+  //   Serial.println("WE IN SIMP MODE YO!");
+  // }
 }
 
+bool boomShock = false;
 
 void loop() {
 
-  //autonet.loop();
-  display.loop();
-  inputPollingLoop();
-  networkLoop();
+  if (clockState != SIMPLE_MODE) {
+    display.loop();
+    inputPollingLoop();
+    networkLoop();
+    if (!boomShock) {
+      Serial.println("BOOM SHOCK 2");
+      boomShock = true;
+    }
+  }
 
   switch (clockState) {
+    case SIMPLE_MODE:
+      break;
     case IDLE:
       checkForGlitchTimeout();
       break;
@@ -178,6 +219,7 @@ void loop() {
 
 void networkLoop() {
 
+#ifdef ARDUINO_TEENSY41
   // Pet the watchdog
   if (watchdogTimer >= watchdogInterval) {
 
@@ -211,13 +253,13 @@ void networkLoop() {
       // msgIN.route("/GordoClock/Time", oscSetTime);
     }
   }
+
+#endif
 }
 
-void oscSetDisplay(OSCMessage &msg, int addrOffset) {
 
-#ifdef DEBUG
-  Serial.println("SET DISPLAY RECEIVED");
-#endif
+#ifdef ARDUINO_TEENSY41
+void oscSetDisplay(OSCMessage &msg, int addrOffset) {
 
   idleTimeoutTimer = 0;
   clockState = OSCDISPLAY;
@@ -238,9 +280,11 @@ void oscSetDisplay(OSCMessage &msg, int addrOffset) {
     //error = 0; //trow an error
   }
 
+  // Scroll message received across display
   display.clear();
   display.scrollString(message);
 
+  // Reply to sender
   String msgText = "/GordoClock/Display";
   OSCMessage msgOUT(msgText.c_str());
   msgOUT.add(str);  // send TRUE we got the Foward Message
@@ -249,29 +293,55 @@ void oscSetDisplay(OSCMessage &msg, int addrOffset) {
   Udp.endPacket();
   msgOUT.empty();
 }
+#endif
+
+
+void sendOSC() {
+#ifdef ARDUINO_TEENSY41
+  OSCMessage msg("/example");
+  msg.add(1);
+  Udp.beginPacket(ip1, outPort);
+  msg.send(Udp);
+  Udp.endPacket();  // mark the end of the OSC Packet
+  msg.empty();      // free space occupied by message
+  Serial.println("sent");
+#endif
+}
 
 
 void inputPollingLoop() {
-  // Check for button presses
+
+  // Check for button presses ---------------------------------------------
   sleepButton.update();
   wakeButton.update();
   hourButton.update();
   minuteButton.update();
   snoozButton.update();
 
-  if (sleepButton.fallingEdge()) {
+  if (sleepButton.fell()) {
     buttonPressed(SLEEP_BUTTON);
-  } else if (wakeButton.fallingEdge()) {
+  } else if (wakeButton.fell()) {
     buttonPressed(WAKE_BUTTON);
-  } else if (hourButton.fallingEdge()) {
+  } else if (hourButton.fell()) {
     buttonPressed(HOUR_BUTTON);
-  } else if (minuteButton.fallingEdge()) {
+  } else if (minuteButton.fell()) {
     buttonPressed(MINUTE_BUTTON);
-  } else if (snoozButton.fallingEdge()) {
+  } else if (snoozButton.fell()) {
     buttonPressed(SNOOZ_BUTTON);
+  } else if (snoozButton.isPressed()) {
+    if (dynamicRefreshUpdateTimer > dynamicRefreshUpdateRate) {
+      idleTimeoutTimer = 0;
+      dynamicRefreshUpdateTimer = 0;
+      display.setRefreshRate((snoozButton.currentDuration() * 2) + 1);
+      //Serial.println(snoozButton.currentDuration());
+    }
+  } else if (snoozButton.released()) {
+    idleTimeoutTimer = 0;
   }
 
-  // Poll tuning encoder
+
+#ifdef ARDUINO_TEENSY41
+  // Poll Tuner Encoder -------------------------------------------------------
   // Only change state if value has changed by a determined amount
   long newTunerPosition = tunerEncoder.read();
   if (newTunerPosition != tunerPosition) {
@@ -283,6 +353,33 @@ void inputPollingLoop() {
     tunerPosition = newTunerPosition;
     Serial.println(newTunerPosition);
   }
+#endif
+
+
+  // Check The Mode Switch -----------------------------------------------------
+  if (modeSwitchPollTimer >= modeSwitchPollRate) {
+    int switchVal = analogRead(MODE_SWITCH);
+    ToggleSwitchState newSwitchState;
+
+    if (switchVal < 50) {
+      newSwitchState = OFF_SWITCH_STATE;
+    } else if (switchVal < 300) {
+      newSwitchState = ON_SWITCH_STATE;
+    } else if (switchVal < 600) {
+      newSwitchState = MUSIC_SWITCH_STATE;
+    } else {
+      newSwitchState = ALARM_SWITCH_STATE;
+    }
+
+    if (newSwitchState != toggleSwitchState) {
+      toggleSwitchState = newSwitchState;
+    }
+
+    // Serial.print("Switch val: ");
+    // Serial.print(toggleSwitchState);
+    // Serial.println();
+    modeSwitchPollTimer = 0;
+  }
 }
 
 
@@ -292,6 +389,7 @@ void tunerLoop() {
 
 
 void musicStateLoop() {
+#ifdef ARDUINO_TEENSY41
   if (clockState == MUSIC) {
     if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
@@ -303,6 +401,7 @@ void musicStateLoop() {
       }
     }
   }
+#endif
 }
 
 
@@ -312,47 +411,46 @@ void buttonPressed(ClockInput pressedButton) {
 
   if (pressedButton == SLEEP_BUTTON) {
     clockState = SLEEP;
+#ifdef ARDUINO_TEENSY41
     playWav1.play("GLADIATORS.WAV");
+#endif
     display.playSleepAnimation();
   } else if (pressedButton == WAKE_BUTTON) {
-    //clockState = WAKE;
-    clockState = MUSIC;
-    vuMeterRefreshTimer = 0;
+    clockState = WAKE;
+#ifdef ARDUINO_TEENSY41
     //playWav1.play("DEMNTEDCIRCUS.WAV");
     playWav1.play("LONGDJENT.WAV");
-    //playWav1.play("ALARM2.WAV");
+//playWav1.play("ALARM2.WAV");
+#endif
     display.playWakeAnimation();
   } else if (pressedButton == HOUR_BUTTON) {
     clockState = HOUR;
+#ifdef ARDUINO_TEENSY41
     playWav1.play("3SECSAWSWEEP.WAV");
+#endif
     display.playHourAnimation();
   } else if (pressedButton == MINUTE_BUTTON) {
     clockState = MINUTE;
+#ifdef ARDUINO_TEENSY41
     playWav1.play("3SECSINESWEEP.WAV");
+#endif
     //display.scrollString("Gordon KILLED JARED");
     //display.scrollString("yo");
     display.playMinuteAnimation();
   } else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
+#ifdef ARDUINO_TEENSY41
     playWav1.stop();
+#endif
     display.playSnoozAnimation();
   }
 
   sendOSC();
 
+#ifdef ARDUINO_TEENSY41
   Serial.print("audio usage:  ");
   Serial.println(AudioProcessorUsage());
-}
-
-
-void sendOSC() {
-  OSCMessage msg("/example");
-  msg.add(1);
-  Udp.beginPacket(ip1, outPort);
-  msg.send(Udp);
-  Udp.endPacket();  // mark the end of the OSC Packet
-  msg.empty();      // free space occupied by message
-  Serial.println("sent");
+#endif
 }
 
 

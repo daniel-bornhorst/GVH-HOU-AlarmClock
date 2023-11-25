@@ -14,11 +14,14 @@ ClockDisplay::ClockDisplay() {
 void ClockDisplay::setup() {
   // Setup display
   _matrix.begin();
+
+  #ifdef ARDUINO_TEENSY41
   _matrix.displayOn();
   _matrix.brightness(DEFAULT_BRIGHTNESS);
   _matrix.displayClear();
   _matrix.blink(0);
   _matrix.cacheOn();
+  #endif
 
   _frameTimer = 0;
   _stringScrollIndex = 0;
@@ -31,6 +34,7 @@ void ClockDisplay::loop() {
     case DISPLAY_OFF:
       return;
     case SCRIPTED_ANIMATION:
+    case DYNAMIC_RATE_SCRIPTED_ANIMATION:
       scriptedAnimationLoop();
       break;
     case BUFFER_SCROLL:
@@ -57,21 +61,20 @@ void ClockDisplay::playGlitchAnimation() {
 
 
 void ClockDisplay::playSleepAnimation() {
-  loadAnimation(middleOutWipe1);
+  loadAnimation(sleepAnimationWithRandom);
   Serial.println("Sleep Button");
 }
 
 
 void ClockDisplay::playWakeAnimation() {
-  loadAnimation(noiseAnimation1);
+  loadAnimation(sevenOhSixWake);
   Serial.println("Wake Button");
 }
 
 
 void ClockDisplay::playHourAnimation() {
   //loadAnimation(middleOutWipe1);
-  //loadAnimation(sevenOhSixHour);
-  loadAnimation(diagonalWipe1);
+  loadAnimation(sevenOhSixHour);
   Serial.println("Hour Button");
 }
 
@@ -83,8 +86,32 @@ void ClockDisplay::playMinuteAnimation() {
 
 
 void ClockDisplay::playSnoozAnimation() {
-  loadAnimation(circleAnimation1);
+  loadAnimation(sevenOhSixSnooz);
   Serial.println("Snooz Button");
+}
+
+
+void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
+  loadAnimation(middleOutWipe1);
+
+  switch (animationIndex) {
+    case 0:
+      loadAnimation(middleOutWipe1);
+      break;
+    case 1:
+      loadAnimation(circleAnimation2);
+      break;
+    case 2:
+      loadAnimation(circleAnimation3);
+      break;
+    case 3:
+      loadAnimation(diagonalWipe1);
+      break;
+  }
+
+  Serial.print("Snooz Button ");
+  Serial.print(animationIndex);
+  Serial.println();
 }
 
 
@@ -111,6 +138,10 @@ void ClockDisplay::displayString(String displayString) {
   _matrix.displayChars(chars);
 }
 
+void ClockDisplay::displayTime(int hours, int minutes) {
+  setDisplayState(MANUAL_STATIC);
+  _matrix.displayTime(hours, minutes, true, false); // display hour,s minutes, colon, and no leading zero
+}
 
 void ClockDisplay::setTime(int hours, int minutes) {
   _hours = hours;
@@ -133,6 +164,12 @@ void ClockDisplay::setDisplayState(DisplayState newState) {
     _matrix.brightness(DEFAULT_BRIGHTNESS);
     _displayState = newState;
   }
+}
+
+
+void ClockDisplay::setRefreshRate(unsigned long newRefreshRate) {
+  setDisplayState(DYNAMIC_RATE_SCRIPTED_ANIMATION);
+  //_dynamicRefreshRate = newRefreshRate;
 }
 
 
@@ -183,14 +220,28 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
     _matrix.brightness(_currentAnimation[_frameIndex].brightness);
   }
 
+  bool advanceToNextFrame = false;
 
-  if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
+  if(_displayState == DYNAMIC_RATE_SCRIPTED_ANIMATION) {
+    if (_frameTimer > _dynamicRefreshRate) {
+      advanceToNextFrame = true;
+      _dynamicRefreshRate += 1;
+      Serial.println(_dynamicRefreshRate);
+    }
+    
+  }
+  else {
+    advanceToNextFrame = (_frameTimer > _currentAnimation[_frameIndex].holdTime);
+  }
+
+
+  if (advanceToNextFrame) {
     if ((_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0) {  // if this is the last frame of the animation
       
       _anmiationRepetitions++;
       
       if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
-        loadAnimation(sevenOhSixThrob);
+        playIdleAnimation();
         return;
       }
 
