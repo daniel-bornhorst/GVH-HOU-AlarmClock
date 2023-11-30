@@ -340,22 +340,6 @@ void inputPollingLoop() {
   }
 
 
-#ifdef ARDUINO_TEENSY41
-  // Poll Tuner Encoder -------------------------------------------------------
-  // Only change state if value has changed by a determined amount
-  long newTunerPosition = tunerEncoder.read();
-  if (newTunerPosition != tunerPosition) {
-
-    clockState = TUNER;
-    idleTimeoutTime = tunerModeTimeoutTime;
-    idleTimeoutTimer = 0;
-
-    tunerPosition = newTunerPosition;
-    Serial.println(newTunerPosition);
-  }
-#endif
-
-
   // Check The Mode Switch -----------------------------------------------------
   if (modeSwitchPollTimer >= modeSwitchPollRate) {
     int switchVal = analogRead(MODE_SWITCH);
@@ -380,6 +364,23 @@ void inputPollingLoop() {
     // Serial.println();
     modeSwitchPollTimer = 0;
   }
+  
+
+#ifdef ARDUINO_TEENSY41
+  // Poll Tuner Encoder -------------------------------------------------------
+  // Only change state if value has changed by a determined amount
+  long newTunerPosition = tunerEncoder.read();
+  if (newTunerPosition != tunerPosition) {
+
+    clockState = TUNER;
+    idleTimeoutTime = tunerModeTimeoutTime;
+    idleTimeoutTimer = 0;
+
+    tunerPosition = newTunerPosition;
+    Serial.println(newTunerPosition);
+  }
+#endif
+
 }
 
 
