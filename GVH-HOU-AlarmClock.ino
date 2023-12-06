@@ -3,13 +3,18 @@
 #include "elapsedMillis.h"
 #include <Bounce2.h>
 
+//#define USE_NETWORK
+
 #ifdef ARDUINO_TEENSY41  //---------------------------------------------------------------------
 #define ENCODER_DO_NOT_USE_INTERRUPTS
 
-#include <Encoder.h>
+#ifdef USE_NETWORK
 #include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
 #include <NativeEthernetUdp.h>  // use if you have a Wiznet w5100 Ethernet shield
 #include "OSCMessage.h"
+#endif
+
+#include <Encoder.h>
 
 #include <Audio.h>
 #include <Wire.h>
@@ -21,6 +26,7 @@
 #define SDCARD_MOSI_PIN 11  // not actually used
 #define SDCARD_SCK_PIN 13   // not actually used
 
+#ifdef USE_NETWORK
 // Network Stuff
 EthernetUDP Udp;
 
@@ -50,6 +56,10 @@ const unsigned int outPort = 7777;
 int is_connected = 1;          // 0 = broken connection, 1 = connected
 #define RETRY_TIME 5000        // how often to retry broken UDP connections
 unsigned long retrytimer = 0;  // timer for the UDP retries
+
+elapsedMillis watchdogTimer;
+
+#endif
 
 // Audio Stuff
 AudioPlaySdWav playWav1;
@@ -88,7 +98,6 @@ elapsedMillis ledToggleTimer;
 elapsedMillis ledOnTimeTimer;
 elapsedMillis modeSwitchPollTimer;
 elapsedMillis dynamicRefreshUpdateTimer;
-elapsedMillis watchdogTimer;
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
@@ -142,15 +151,14 @@ void setup() {
   display.setTime(7, 6);
   display.playIdleAnimation();
 
-  Serial.println("BOOM SHOCK 0");
-
 #ifdef ARDUINO_TEENSY41
+
+  #ifdef USE_NETWORK
   // Ethernet Setup
   //Ethernet.begin(mac, ip, ddns, gateway, subnet);
   Ethernet.begin(mac, ip);  // use this if you don't need gateway and subnet
-  Serial.println("BOOM SHOCK 0.1");
   Udp.begin(localPort);
-  Serial.println("BOOM SHOCK 0.2");
+  #endif
 
 
   // SD Card Setup
@@ -168,8 +176,6 @@ void setup() {
 #endif
 
   delay(1000);
-
-  Serial.println("BOOM SHOCK 1");
 
   // Simple Mode Check
   // Start in simple mode unless these three buttons are held during boot
@@ -220,6 +226,7 @@ void loop() {
 void networkLoop() {
 
 #ifdef ARDUINO_TEENSY41
+#ifdef USE_NETWORK
   // Pet the watchdog
   if (watchdogTimer >= watchdogInterval) {
 
@@ -253,12 +260,13 @@ void networkLoop() {
       // msgIN.route("/GordoClock/Time", oscSetTime);
     }
   }
-
+#endif
 #endif
 }
 
 
 #ifdef ARDUINO_TEENSY41
+#ifdef USE_NETWORK
 void oscSetDisplay(OSCMessage &msg, int addrOffset) {
 
   idleTimeoutTimer = 0;
@@ -294,10 +302,12 @@ void oscSetDisplay(OSCMessage &msg, int addrOffset) {
   msgOUT.empty();
 }
 #endif
+#endif
 
 
 void sendOSC() {
 #ifdef ARDUINO_TEENSY41
+#ifdef USE_NETWORK
   OSCMessage msg("/example");
   msg.add(1);
   Udp.beginPacket(ip1, outPort);
@@ -305,6 +315,7 @@ void sendOSC() {
   Udp.endPacket();  // mark the end of the OSC Packet
   msg.empty();      // free space occupied by message
   Serial.println("sent");
+#endif
 #endif
 }
 
