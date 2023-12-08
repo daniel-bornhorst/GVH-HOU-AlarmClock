@@ -186,18 +186,12 @@ void setup() {
   // }
 }
 
-bool boomShock = false;
-
 void loop() {
 
   if (clockState != SIMPLE_MODE) {
     display.loop();
     inputPollingLoop();
     networkLoop();
-    if (!boomShock) {
-      Serial.println("BOOM SHOCK 2");
-      boomShock = true;
-    }
   }
 
   switch (clockState) {
@@ -208,6 +202,8 @@ void loop() {
       break;
     case GLITCH:
       checkForIdleTimeout();
+      break;
+    case SLEEP:
       break;
     // case MUSIC:
     //   musicStateLoop();

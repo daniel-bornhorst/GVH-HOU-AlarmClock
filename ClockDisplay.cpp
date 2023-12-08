@@ -206,6 +206,7 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
 
   if (_currentAnimation == NULL) { return; }
 
+  // Display the actual frame with all options
   if (_frameAdvanced || newAnimation) {
     // Check for digit randomization mask
     if (_currentAnimation[_frameIndex].controlBits & RANDOMIZE_DISPLAY) {
@@ -220,26 +221,14 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
     _matrix.brightness(_currentAnimation[_frameIndex].brightness);
   }
 
-  bool advanceToNextFrame = false;
-
-  if(_displayState == DYNAMIC_RATE_SCRIPTED_ANIMATION) {
-    if (_frameTimer > _dynamicRefreshRate) {
-      advanceToNextFrame = true;
-      _dynamicRefreshRate += 1;
-      Serial.println(_dynamicRefreshRate);
-    }
-    
-  }
-  else {
-    advanceToNextFrame = (_frameTimer > _currentAnimation[_frameIndex].holdTime);
-  }
-
-
-  if (advanceToNextFrame) {
+  // This is logic to determin if we are ready to advance to the next frame
+  //  Or if we have reached the end of the animation
+  if (_frameTimer > _currentAnimation[_frameIndex].holdTime) {
     if ((_currentAnimation[_frameIndex].controlBits & LAST_FRAME) != 0) {  // if this is the last frame of the animation
       
       _anmiationRepetitions++;
       
+      // If the end of a one shot is reached go back to idle animation
       if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
         playIdleAnimation();
         return;
