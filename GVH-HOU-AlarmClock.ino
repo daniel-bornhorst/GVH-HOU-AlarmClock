@@ -63,13 +63,13 @@ elapsedMillis watchdogTimer;
 
 // Audio Stuff
 AudioPlaySdWav playWav1;
-AudioPlayMemory sound0;
+AudioSynthNoiseWhite noise1;
 //AudioAnalyzeRMS peak1;
 AudioAnalyzePeak peak1;
 AudioMixer4 mixer1;
 AudioOutputI2S headphones;
 AudioConnection c1(playWav1, 0, mixer1, 0);
-AudioConnection c2(sound0, 0, mixer1, 1);
+AudioConnection c2(noise1, 0, mixer1, 1);
 AudioConnection c3(mixer1, peak1);
 AudioConnection c4(mixer1, 0, headphones, 0);
 AudioConnection c5(mixer1, 0, headphones, 1);
@@ -114,6 +114,7 @@ long unsigned const int watchdogInterval = 30000;  // 30 secnds
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
+long unsigned int radioPlaybackTimer = 0;
 long tunerPosition = 0;
 long unsigned int ledToggleTime = 0;
 bool ledToggle = false;
@@ -169,10 +170,13 @@ void setup() {
     delay(500);
   }
 
+  delay(1000);
   // Audio Setup
   AudioMemory(10);
+  playWav1.play("ETNL.WAV");
+  radioPlaybackTimer = playWav1.lengthMillis();
   mixer1.gain(0, 0.1);
-  mixer1.gain(1, 0.1);
+  mixer1.gain(1, 0.0);
 #endif
 
   delay(1000);
@@ -205,9 +209,9 @@ void loop() {
       break;
     case SLEEP:
       break;
-    // case MUSIC:
-    //   musicStateLoop();
-    //   break;
+    case MUSIC:
+      musicStateLoop();
+      break;
     case TUNER:
       tunerLoop();
       checkForIdleTimeout();
@@ -379,12 +383,15 @@ void inputPollingLoop() {
   long newTunerPosition = tunerEncoder.read();
   if (newTunerPosition != tunerPosition) {
 
-    clockState = TUNER;
+    clockState = MUSIC;
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
     Serial.println(newTunerPosition);
+
+    mixer1.gain(0, 0.1*tunerPosition);
+    mixer1.gain(1, 0.0);
   }
 #endif
 
@@ -420,27 +427,27 @@ void buttonPressed(ClockInput pressedButton) {
   if (pressedButton == SLEEP_BUTTON) {
     clockState = SLEEP;
 #ifdef ARDUINO_TEENSY41
-    playWav1.play("GLADIATORS.WAV");
+    //playWav1.play("GLADIATORS.WAV");
 #endif
     display.playSleepAnimation();
   } else if (pressedButton == WAKE_BUTTON) {
     clockState = WAKE;
 #ifdef ARDUINO_TEENSY41
     //playWav1.play("DEMNTEDCIRCUS.WAV");
-    playWav1.play("LONGDJENT.WAV");
+    //playWav1.play("LONGDJENT.WAV");
 //playWav1.play("ALARM2.WAV");
 #endif
     display.playWakeAnimation();
   } else if (pressedButton == HOUR_BUTTON) {
     clockState = HOUR;
 #ifdef ARDUINO_TEENSY41
-    playWav1.play("3SECSAWSWEEP.WAV");
+    //playWav1.play("3SECSAWSWEEP.WAV");
 #endif
     display.playHourAnimation();
   } else if (pressedButton == MINUTE_BUTTON) {
     clockState = MINUTE;
 #ifdef ARDUINO_TEENSY41
-    playWav1.play("3SECSINESWEEP.WAV");
+    //playWav1.play("3SECSINESWEEP.WAV");
 #endif
     //display.scrollString("Gordon KILLED JARED");
     //display.scrollString("yo");
@@ -448,7 +455,7 @@ void buttonPressed(ClockInput pressedButton) {
   } else if (pressedButton == SNOOZ_BUTTON) {
     clockState = SNOOZ;
 #ifdef ARDUINO_TEENSY41
-    playWav1.stop();
+    //playWav1.stop();
 #endif
     display.playSnoozAnimation();
   }
@@ -468,6 +475,9 @@ void checkForIdleTimeout() {
     glitchTimer = 0;
     idleTimeoutTime = defaultIdleTimeoutTime;
     display.playIdleAnimation();
+
+    mixer1.gain(0, 0.0);
+    mixer1.gain(1, 0.0);
   }
 }
 
