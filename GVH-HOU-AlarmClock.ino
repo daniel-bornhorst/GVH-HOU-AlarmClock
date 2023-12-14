@@ -3,16 +3,8 @@
 #include "elapsedMillis.h"
 #include <Bounce2.h>
 
-//#define USE_NETWORK
-
 #ifdef ARDUINO_TEENSY41  //---------------------------------------------------------------------
 #define ENCODER_DO_NOT_USE_INTERRUPTS
-
-#ifdef USE_NETWORK
-#include <NativeEthernet.h>     // use if you have a Wiznet w5100 Ethernet shield
-#include <NativeEthernetUdp.h>  // use if you have a Wiznet w5100 Ethernet shield
-#include "OSCMessage.h"
-#endif
 
 #include <Encoder.h>
 
@@ -26,40 +18,6 @@
 #define SDCARD_MOSI_PIN 11  // not actually used
 #define SDCARD_SCK_PIN 13   // not actually used
 
-#ifdef USE_NETWORK
-// Network Stuff
-EthernetUDP Udp;
-
-//This device's unique IP and Mac Address
-// IPAddress ip(10, 32, 16, 200);
-// byte mac[] = { 0x81, 0x1C, 0xBD, 0xC3, 0x33, 0x67 };
-// you can find this written on the board of some Arduino Ethernets or shields
-byte mac[] = { 0x66, 0x6D, 0x66, 0x69, 0x66, 0x67 };
-byte ip[] = { 10, 32, 16, 200 };
-
-char arduino_name[50] = "d8b94bbb-3b48-421a-b449-51bf9d4dfb64";  //UUID
-int localPort = 7777;                                            // autonet expects to see incoming OSC on port 7777
-
-//define outgoing IP and port to send OSC messages to a server
-IPAddress showController_ip(10, 32, 16, 10);  //Cathy's temporary test server
-const unsigned int showController_port = 6666;
-//stuff we need if we're not on 10.42.16.*
-byte ddns[] = { 10, 32, 17, 1 };
-byte *gateway = ddns;
-byte subnet[] = { 255, 255, 240, 0 };
-
-// IP and Port of OSC destination
-IPAddress ip1(10, 32, 16, 128);  // powercouple
-const unsigned int outPort = 7777;
-
-//create your Autonet object, pass in the IP and MAC address from above, plus custom stuff for our new show controller
-int is_connected = 1;          // 0 = broken connection, 1 = connected
-#define RETRY_TIME 5000        // how often to retry broken UDP connections
-unsigned long retrytimer = 0;  // timer for the UDP retries
-
-elapsedMillis watchdogTimer;
-
-#endif
 
 // Audio Stuff
 AudioPlaySdWav playWav1;
@@ -154,14 +112,6 @@ void setup() {
 
 #ifdef ARDUINO_TEENSY41
 
-  #ifdef USE_NETWORK
-  // Ethernet Setup
-  //Ethernet.begin(mac, ip, ddns, gateway, subnet);
-  Ethernet.begin(mac, ip);  // use this if you don't need gateway and subnet
-  Udp.begin(localPort);
-  #endif
-
-
   // SD Card Setup
   SPI.setMOSI(SDCARD_MOSI_PIN);
   SPI.setSCK(SDCARD_SCK_PIN);
@@ -226,103 +176,6 @@ void loop() {
     playWav1.play("ETNL.WAV");
     delay(10); // wait for library to parse WAV info
   }
-}
-
-
-void networkLoop() {
-
-#ifdef ARDUINO_TEENSY41
-#ifdef USE_NETWORK
-  // Pet the watchdog
-  if (watchdogTimer >= watchdogInterval) {
-
-    OSCMessage msg("/watchdog_update");
-    msg.add("OKAY");
-    msg.add(arduino_name);
-    msg.add(int(0));  // or you can figure uptime in seconds on your own, and insert it here
-    Udp.beginPacket(showController_ip, showController_port);
-    msg.send(Udp);    // send the bytes to the SLIP stream
-    Udp.endPacket();  //mark the end of the packet
-    msg.empty();      // free space occupied by message
-
-    watchdogTimer = 0;
-  }
-
-  // Check for incoming OSC messages
-  OSCMessage msgIN;
-  int size;
-  if ((size = Udp.parsePacket()) > 0) {
-    while (size--) {
-      msgIN.fill(Udp.read());
-    }
-    if (!msgIN.hasError()) {
-
-      digitalWrite(tunerLedPinLeft, ledToggle);
-      digitalWrite(tunerLedPinRight, ledToggle);
-      ledToggle = !ledToggle;
-
-      msgIN.route("/GordoClock/Display", oscSetDisplay);
-      // msgIN.route("/GordoClock/Blink", oscBlinkColon);
-      // msgIN.route("/GordoClock/Time", oscSetTime);
-    }
-  }
-#endif
-#endif
-}
-
-
-#ifdef ARDUINO_TEENSY41
-#ifdef USE_NETWORK
-void oscSetDisplay(OSCMessage &msg, int addrOffset) {
-
-  idleTimeoutTimer = 0;
-  clockState = OSCDISPLAY;
-
-  char str[msg.getDataLength(0)];
-
-  String message;
-  if (msg.isString(0)) {
-    Serial.print("OSC STR: ");
-    msg.getString(0, str);
-    message = String(str);
-    Serial.println(message);
-  } else if (msg.isInt(0)) {  //only if theres a number
-    Serial.print("OSC INT: ");
-    message = String(msg.getInt(0));
-    Serial.println(message);
-  } else {
-    //error = 0; //trow an error
-  }
-
-  // Scroll message received across display
-  display.clear();
-  display.scrollString(message);
-
-  // Reply to sender
-  String msgText = "/GordoClock/Display";
-  OSCMessage msgOUT(msgText.c_str());
-  msgOUT.add(str);  // send TRUE we got the Foward Message
-  Udp.beginPacket(Udp.remoteIP(), outPort);
-  msgOUT.send(Udp);
-  Udp.endPacket();
-  msgOUT.empty();
-}
-#endif
-#endif
-
-
-void sendOSC() {
-#ifdef ARDUINO_TEENSY41
-#ifdef USE_NETWORK
-  OSCMessage msg("/example");
-  msg.add(1);
-  Udp.beginPacket(ip1, outPort);
-  msg.send(Udp);
-  Udp.endPacket();  // mark the end of the OSC Packet
-  msg.empty();      // free space occupied by message
-  Serial.println("sent");
-#endif
-#endif
 }
 
 
@@ -465,8 +318,6 @@ void buttonPressed(ClockInput pressedButton) {
 #endif
     display.playSnoozAnimation();
   }
-
-  sendOSC();
 
 #ifdef ARDUINO_TEENSY41
   Serial.print("audio usage:  ");
