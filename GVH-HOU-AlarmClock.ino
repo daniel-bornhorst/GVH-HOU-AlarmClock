@@ -107,14 +107,14 @@ long unsigned int glitchTimeoutTime = 240000;  // 4 min
 //long unsigned int glitchTimeoutTime = 60000; // 1 min
 //long unsigned int glitchTimeoutTime = 30000; // 30 sec
 long unsigned const int ledOnTime = 10;
-const int vuMeterRefreshRate = 24;
+const int vuMeterRefreshRate = 42;
 long unsigned const int modeSwitchPollRate = 10;
 long unsigned const int dynamicRefreshUpdateRate = 250;
 long unsigned const int watchdogInterval = 30000;  // 30 secnds
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
-long unsigned int radioPlaybackTimer = 0;
+long unsigned int radioPlaybackLength = 0;
 long tunerPosition = 0;
 long unsigned int ledToggleTime = 0;
 bool ledToggle = false;
@@ -174,7 +174,7 @@ void setup() {
   // Audio Setup
   AudioMemory(10);
   playWav1.play("ETNL.WAV");
-  radioPlaybackTimer = playWav1.lengthMillis();
+  radioPlaybackLength = playWav1.lengthMillis();
   mixer1.gain(0, 0.1);
   mixer1.gain(1, 0.0);
 #endif
@@ -219,6 +219,12 @@ void loop() {
     default:
       checkForIdleTimeout();
       break;
+  }
+
+  if (playWav1.isPlaying() == false) {
+    Serial.println("Start playing");
+    playWav1.play("ETNL.WAV");
+    delay(10); // wait for library to parse WAV info
   }
 }
 
@@ -390,7 +396,7 @@ void inputPollingLoop() {
     tunerPosition = newTunerPosition;
     Serial.println(newTunerPosition);
 
-    mixer1.gain(0, 0.1*tunerPosition);
+    mixer1.gain(0, 0.01*tunerPosition);
     mixer1.gain(1, 0.0);
   }
 #endif
