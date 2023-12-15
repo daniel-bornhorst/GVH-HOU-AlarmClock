@@ -21,16 +21,20 @@
 
 // Audio Stuff
 AudioPlaySdWav playWav1;
-AudioSynthNoiseWhite noise1;
+AudioPlaySdWav playWav2;
+AudioPlaySdWav playWav3;
+AudioSynthNoisePink noise1;
 //AudioAnalyzeRMS peak1;
 AudioAnalyzePeak peak1;
 AudioMixer4 mixer1;
 AudioOutputI2S headphones;
-AudioConnection c1(playWav1, 0, mixer1, 0);
-AudioConnection c2(noise1, 0, mixer1, 1);
-AudioConnection c3(mixer1, peak1);
-AudioConnection c4(mixer1, 0, headphones, 0);
-AudioConnection c5(mixer1, 0, headphones, 1);
+AudioConnection c1(noise1, 0, mixer1, 0);
+AudioConnection c2(playWav1, 0, mixer1, 1);
+AudioConnection c3(playWav2, 0, mixer1, 2);
+AudioConnection c4(playWav3, 0, mixer1, 3);
+AudioConnection c5(mixer1, peak1);
+AudioConnection c6(mixer1, 0, headphones, 0);
+AudioConnection c7(mixer1, 0, headphones, 1);
 
 // Peripheral Devies
 Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
@@ -72,7 +76,6 @@ long unsigned const int watchdogInterval = 30000;  // 30 secnds
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
-long unsigned int radioPlaybackLength = 0;
 long tunerPosition = 0;
 long unsigned int ledToggleTime = 0;
 bool ledToggle = false;
@@ -124,9 +127,18 @@ void setup() {
   // Audio Setup
   AudioMemory(10);
   playWav1.play("ETNL.WAV");
-  radioPlaybackLength = playWav1.lengthMillis();
-  mixer1.gain(0, 0.1);
+  delay(1000);
+  playWav2.play("LUCIUS.WAV");
+  delay(1000);
+  playWav3.play("NUMBERS.WAV");
+  delay(1000);
+
+  noise1.amplitude(0.5);
+
+  mixer1.gain(0, 0.0);
   mixer1.gain(1, 0.0);
+  mixer1.gain(2, 0.0);
+  mixer1.gain(3, 0.0);
 #endif
 
   delay(1000);
@@ -145,7 +157,6 @@ void loop() {
   if (clockState != SIMPLE_MODE) {
     display.loop();
     inputPollingLoop();
-    networkLoop();
   }
 
   switch (clockState) {
@@ -172,8 +183,18 @@ void loop() {
   }
 
   if (playWav1.isPlaying() == false) {
-    Serial.println("Start playing");
+    Serial.println("Start playing 1");
     playWav1.play("ETNL.WAV");
+    delay(10); // wait for library to parse WAV info
+  }
+  if (playWav2.isPlaying() == false) {
+    Serial.println("Start playing 2");
+    playWav2.play("LUCIUS.WAV");
+    delay(10); // wait for library to parse WAV info
+  }
+  if (playWav3.isPlaying() == false) {
+    Serial.println("Start playing 3");
+    playWav3.play("NUMBERS.WAV");
     delay(10); // wait for library to parse WAV info
   }
 }
@@ -247,10 +268,81 @@ void inputPollingLoop() {
     idleTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
-    Serial.println(newTunerPosition);
+    if(tunerPosition < 0) {
+      tunerPosition = 0;
+      tunerEncoder.write(0);
+    }
+    
+    float gainNoise;
+    float gainRadio;
 
-    mixer1.gain(0, 0.01*tunerPosition);
-    mixer1.gain(1, 0.0);
+    if (tunerPosition >= 0 && tunerPosition < 9) {
+      //noise down, radio station 1 up
+      gainNoise = (map(tunerPosition, 0, 8, 100, 0)/100.0);
+      gainRadio = (map(tunerPosition, 0, 8, 0, 100)/100.0);
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(1, gainRadio);
+    }
+    else if (tunerPosition >= 9 && tunerPosition < 17) {
+      //noise up, radio station 1 down
+      gainNoise = (map(tunerPosition-9, 0, 7, 0, 100)/100.0);
+      gainRadio = (map(tunerPosition-9, 0, 7, 100, 0)/100.0);
+
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(1, gainRadio);
+    }
+    else if (tunerPosition >= 17 && tunerPosition < 26) {
+      //noise down, radio station 2 up
+      gainNoise = (map(tunerPosition-17, 0, 8, 100, 0)/100.0);
+      gainRadio = (map(tunerPosition-17, 0, 8, 0, 100)/100.0);
+
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(2, gainRadio);
+
+    }
+    else if (tunerPosition >= 26 && tunerPosition < 33) {
+      //noise up, radio station 2 down
+      gainNoise = (map(tunerPosition-26, 0, 6, 0, 100)/100.0);
+      gainRadio = (map(tunerPosition-26, 0, 6, 100, 0)/100.0);
+
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(2, gainRadio);
+    }
+    else if (tunerPosition >= 33 && tunerPosition < 42) {
+      //noise down, radio station 3 up
+      gainNoise = (map(tunerPosition-33, 0, 8, 100, 0)/100.0);
+      gainRadio = (map(tunerPosition-33, 0, 8, 0, 100)/100.0);
+
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(3, gainRadio);
+
+    }
+    else if (tunerPosition >= 42 && tunerPosition <= 50) {
+      //noise up, radio station 3 down
+      gainNoise = (map(tunerPosition-42, 0, 7, 0, 100)/100.0);
+      gainRadio = (map(tunerPosition-42, 0, 7, 100, 0)/100.0);
+
+      mixer1.gain(0, gainNoise);
+      mixer1.gain(3, gainRadio);
+
+    }
+    else {
+      mixer1.gain(0, 0);
+      mixer1.gain(1, 0);
+      mixer1.gain(2, 0);
+      mixer1.gain(3, 0);
+    }
+
+    Serial.print("gainNoise: ");
+    Serial.print(gainNoise);
+    Serial.print("  gainRadio: ");
+    Serial.println(gainRadio);
+
+
+    Serial.println(tunerPosition);
+
+    // mixer1.gain(0, 0.1*tunerPosition);
+    // mixer1.gain(2, 1.0 - 0.6*tunerPosition);
   }
 #endif
 
@@ -270,7 +362,8 @@ void musicStateLoop() {
       vuMeterRefreshTimer = 0;
 
       if (peak1.available()) {
-        uint8_t peakScaled = peak1.read() * 70.0;
+        //uint8_t peakScaled = peak1.read() * 70.0;
+        uint8_t peakScaled = peak1.read()*15;
         display.setVuMeter(peakScaled);
       }
     }
