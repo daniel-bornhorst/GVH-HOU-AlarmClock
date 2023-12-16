@@ -1,3 +1,5 @@
+#define _DEBUG
+
 #include "ClockDisplay.h"
 #include "ClockGlobals.h"
 #include "elapsedMillis.h"
@@ -146,7 +148,7 @@ void setup() {
   // Simple Mode Check
   // Start in simple mode unless these three buttons are held during boot
   // if ( !(sleepButton.isPressed() && minuteButton.isPressed() && snoozButton.isPressed()) ) {
-  //   clockState = SIMPLE_MODE;
+  //   setState(SIMPLE_MODE);
   //   display.displayTime();
   //   Serial.println("WE IN SIMP MODE YO!");
   // }
@@ -157,6 +159,7 @@ void loop() {
   if (clockState != SIMPLE_MODE) {
     display.loop();
     inputPollingLoop();
+    audioLoop();
   }
 
   switch (clockState) {
@@ -170,32 +173,20 @@ void loop() {
       break;
     case SLEEP:
       break;
-    case MUSIC:
-      musicStateLoop();
+    case WAKE:
       break;
-    case TUNER:
-      tunerLoop();
-      checkForIdleTimeout();
+    case HOUR:
+      break;
+    case MINUTE:
+      break;
+    case SNOOZ:
+      break;
+    case RADIO:
+      radioStateLoop();
       break;
     default:
       checkForIdleTimeout();
       break;
-  }
-
-  if (playWav1.isPlaying() == false) {
-    Serial.println("Start playing 1");
-    playWav1.play("ETNL.WAV");
-    delay(10); // wait for library to parse WAV info
-  }
-  if (playWav2.isPlaying() == false) {
-    Serial.println("Start playing 2");
-    playWav2.play("LUCIUS.WAV");
-    delay(10); // wait for library to parse WAV info
-  }
-  if (playWav3.isPlaying() == false) {
-    Serial.println("Start playing 3");
-    playWav3.play("NUMBERS.WAV");
-    delay(10); // wait for library to parse WAV info
   }
 }
 
@@ -263,7 +254,7 @@ void inputPollingLoop() {
   long newTunerPosition = tunerEncoder.read();
   if (newTunerPosition != tunerPosition) {
 
-    clockState = MUSIC;
+    setState(RADIO);
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeoutTimer = 0;
 
@@ -271,6 +262,10 @@ void inputPollingLoop() {
     if(tunerPosition < 0) {
       tunerPosition = 0;
       tunerEncoder.write(0);
+    }
+    else if (tunerPosition > 50) {
+      tunerPosition = 50;
+      tunerEncoder.write(50);
     }
     
     float gainNoise;
@@ -293,8 +288,8 @@ void inputPollingLoop() {
     }
     else if (tunerPosition >= 17 && tunerPosition < 26) {
       //noise down, radio station 2 up
-      gainNoise = (map(tunerPosition-17, 0, 8, 100, 0)/100.0);
-      gainRadio = (map(tunerPosition-17, 0, 8, 0, 100)/100.0);
+      gainNoise = (map(tunerPosition-17, 0, 8, 100, 10)/100.0);
+      gainRadio = (map(tunerPosition-17, 0, 8, 0, 90)/100.0);
 
       mixer1.gain(0, gainNoise);
       mixer1.gain(2, gainRadio);
@@ -310,8 +305,8 @@ void inputPollingLoop() {
     }
     else if (tunerPosition >= 33 && tunerPosition < 42) {
       //noise down, radio station 3 up
-      gainNoise = (map(tunerPosition-33, 0, 8, 100, 0)/100.0);
-      gainRadio = (map(tunerPosition-33, 0, 8, 0, 100)/100.0);
+      gainNoise = (map(tunerPosition-33, 0, 8, 100, 10)/100.0);
+      gainRadio = (map(tunerPosition-33, 0, 8, 0, 90)/100.0);
 
       mixer1.gain(0, gainNoise);
       mixer1.gain(3, gainRadio);
@@ -327,6 +322,7 @@ void inputPollingLoop() {
 
     }
     else {
+      // Mute all channels if encoder is out of range
       mixer1.gain(0, 0);
       mixer1.gain(1, 0);
       mixer1.gain(2, 0);
@@ -337,26 +333,38 @@ void inputPollingLoop() {
     Serial.print(gainNoise);
     Serial.print("  gainRadio: ");
     Serial.println(gainRadio);
-
-
     Serial.println(tunerPosition);
-
-    // mixer1.gain(0, 0.1*tunerPosition);
-    // mixer1.gain(2, 1.0 - 0.6*tunerPosition);
   }
 #endif
 
 }
 
 
-void tunerLoop() {
-  display.displayInt(tunerPosition);
+void audioLoop() {
+#ifdef ARDUINO_TEENSY41
+  // Restart Audio Loops if they have reached the end of the file
+  if (playWav1.isPlaying() == false) {
+    Serial.println("Start playing 1");
+    playWav1.play("ETNL.WAV");
+    delay(10); // wait for library to parse WAV info
+  }
+  if (playWav2.isPlaying() == false) {
+    Serial.println("Start playing 2");
+    playWav2.play("LUCIUS.WAV");
+    delay(10); // wait for library to parse WAV info
+  }
+  if (playWav3.isPlaying() == false) {
+    Serial.println("Start playing 3");
+    playWav3.play("NUMBERS.WAV");
+    delay(10); // wait for library to parse WAV info
+  }
+#endif
 }
 
 
-void musicStateLoop() {
+void radioStateLoop() {
 #ifdef ARDUINO_TEENSY41
-  if (clockState == MUSIC) {
+  if (clockState == RADIO) {
     if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
       vuMeterRefreshTimer = 0;
@@ -377,38 +385,25 @@ void buttonPressed(ClockInput pressedButton) {
   idleTimeoutTimer = 0;
 
   if (pressedButton == SLEEP_BUTTON) {
-    clockState = SLEEP;
-#ifdef ARDUINO_TEENSY41
-    //playWav1.play("GLADIATORS.WAV");
-#endif
+    setState(SLEEP);
     display.playSleepAnimation();
-  } else if (pressedButton == WAKE_BUTTON) {
-    clockState = WAKE;
-#ifdef ARDUINO_TEENSY41
-    //playWav1.play("DEMNTEDCIRCUS.WAV");
-    //playWav1.play("LONGDJENT.WAV");
-//playWav1.play("ALARM2.WAV");
-#endif
+  } 
+  else if (pressedButton == WAKE_BUTTON) {
+    setState(WAKE);
     display.playWakeAnimation();
-  } else if (pressedButton == HOUR_BUTTON) {
-    clockState = HOUR;
-#ifdef ARDUINO_TEENSY41
-    //playWav1.play("3SECSAWSWEEP.WAV");
-#endif
+  } 
+  else if (pressedButton == HOUR_BUTTON) {
+    setState(HOUR);
     display.playHourAnimation();
-  } else if (pressedButton == MINUTE_BUTTON) {
-    clockState = MINUTE;
-#ifdef ARDUINO_TEENSY41
-    //playWav1.play("3SECSINESWEEP.WAV");
-#endif
-    //display.scrollString("Gordon KILLED JARED");
+  } 
+  else if (pressedButton == MINUTE_BUTTON) {
+    setState(MINUTE);
+    display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
     //display.scrollString("yo");
-    display.playMinuteAnimation();
-  } else if (pressedButton == SNOOZ_BUTTON) {
-    clockState = SNOOZ;
-#ifdef ARDUINO_TEENSY41
-    //playWav1.stop();
-#endif
+    //display.playMinuteAnimation();
+  } 
+  else if (pressedButton == SNOOZ_BUTTON) {
+    setState(SNOOZ);
     display.playSnoozAnimation();
   }
 
@@ -421,23 +416,68 @@ void buttonPressed(ClockInput pressedButton) {
 
 void checkForIdleTimeout() {
   if (idleTimeoutTimer >= idleTimeoutTime) {
-    clockState = IDLE;
+    setState(IDLE);
     glitchTimer = 0;
     idleTimeoutTime = defaultIdleTimeoutTime;
     display.playIdleAnimation();
 
+    #ifdef ARDUINO_TEENSY41
     mixer1.gain(0, 0.0);
     mixer1.gain(1, 0.0);
+    mixer1.gain(2, 0.0);
+    mixer1.gain(3, 0.0);
+    #endif
   }
 }
 
 
 void checkForGlitchTimeout() {
   if (glitchTimer >= glitchTimeoutTime) {
-    clockState = GLITCH;
+    setState(GLITCH);
     glitchTimer = 0;
     idleTimeoutTimer = 0;
     idleTimeoutTime = defaultIdleTimeoutTime;
     display.playGlitchAnimation();
   }
+}
+
+
+void setState(ClockState newClockState) {
+  clockState = newClockState;
+
+  String stateString;
+  switch (clockState) {
+    case SIMPLE_MODE:
+      stateString = "Simple";
+      break;
+    case IDLE:
+      stateString = "Idle";
+      break;
+    case GLITCH:
+      stateString = "Glitch";
+      break;
+    case SLEEP:
+      stateString = "Sleep";
+      break;
+    case WAKE:
+      stateString = "Wake";
+      break;
+    case HOUR:
+      stateString = "Hour";
+      break;
+    case MINUTE:
+      stateString = "Minute";
+      break;
+    case SNOOZ:
+      stateString = "Snooz";
+      break;
+    case RADIO:
+      stateString = "Radio";
+      break;
+    default:
+      break;
+  }
+  Serial.print("Clock State = ");
+  Serial.print(stateString);
+  Serial.println();
 }

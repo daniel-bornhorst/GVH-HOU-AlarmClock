@@ -50,44 +50,44 @@ void ClockDisplay::loop() {
 
 void ClockDisplay::playIdleAnimation() {
   loadAnimation(sevenOhSixThrob);
-  Serial.println("IDLE");
+  Serial.println("Load Animation: IDLE");
 }
 
 
 void ClockDisplay::playGlitchAnimation() {
   loadAnimation(sevenOhSixGlitch);
-  Serial.println("gLiTcH");
+  Serial.println("Load Animation: gLiTcH");
 }
 
 
 void ClockDisplay::playSleepAnimation() {
   loadAnimation(sleepAnimationWithRandom);
-  Serial.println("Sleep Button");
+  Serial.println("Load Animation: Sleep");
 }
 
 
 void ClockDisplay::playWakeAnimation() {
   loadAnimation(sevenOhSixWake);
-  Serial.println("Wake Button");
+  Serial.println("Load Animation: Wake");
 }
 
 
 void ClockDisplay::playHourAnimation() {
   //loadAnimation(middleOutWipe1);
   loadAnimation(sevenOhSixHour);
-  Serial.println("Hour Button");
+  Serial.println("Load Animation: Hour");
 }
 
 
 void ClockDisplay::playMinuteAnimation() {
   loadAnimation(sevenOhSixMinute);
-  Serial.println("Minute Button");
+  Serial.println("Load Animation: Minute");
 }
 
 
 void ClockDisplay::playSnoozAnimation() {
   loadAnimation(sevenOhSixSnooz);
-  Serial.println("Snooz Button");
+  Serial.println("Load Animation: Snooz");
 }
 
 

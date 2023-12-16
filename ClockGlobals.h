@@ -14,9 +14,8 @@ typedef enum ClockState
   HOUR,
   MINUTE,
   SNOOZ,
-  MUSIC,
+  RADIO,
   ACTUAL_TIME,
-  TUNER,
   OSCDISPLAY
 } clock_state_;
 
