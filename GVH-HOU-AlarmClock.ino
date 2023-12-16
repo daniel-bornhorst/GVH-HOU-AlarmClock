@@ -398,9 +398,9 @@ void buttonPressed(ClockInput pressedButton) {
   } 
   else if (pressedButton == MINUTE_BUTTON) {
     setState(MINUTE);
-    display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
+    //display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
     //display.scrollString("yo");
-    //display.playMinuteAnimation();
+    display.playMinuteAnimation();
   } 
   else if (pressedButton == SNOOZ_BUTTON) {
     setState(SNOOZ);
