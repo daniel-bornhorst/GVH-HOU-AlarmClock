@@ -81,6 +81,7 @@ long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long tunerPosition = 0;
 long unsigned int ledToggleTime = 0;
 bool ledToggle = false;
+bool radioOn = false;
 
 
 void setup() {
@@ -116,6 +117,8 @@ void setup() {
   display.playIdleAnimation();
 
 #ifdef ARDUINO_TEENSY41
+
+  pinMode(tunerLedPinRight, INPUT_PULLUP);
 
   // SD Card Setup
   SPI.setMOSI(SDCARD_MOSI_PIN);
@@ -246,9 +249,29 @@ void inputPollingLoop() {
     // Serial.println();
     modeSwitchPollTimer = 0;
   }
-  
 
 #ifdef ARDUINO_TEENSY41
+  if (digitalRead(tunerLedPinRight) == 0) {
+      
+      // glitchTimer = glitchTimeoutTime+1;
+      // checkForGlitchTimeout();
+      if (radioOn == true) {
+        idleTimeoutTimer = idleTimeoutTime+1;
+        checkForIdleTimeout();
+      }
+
+      radioOn = false;
+      
+  }
+  else {
+    if (radioOn == false) {
+      tunerPosition -= 1;
+    }
+    radioOn = true;
+  }
+  
+
+
   // Poll Tuner Encoder -------------------------------------------------------
   // Only change state if value has changed by a determined amount
   long newTunerPosition = tunerEncoder.read();
