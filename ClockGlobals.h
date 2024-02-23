@@ -63,5 +63,6 @@ const uint8_t tunerEncoderPin2 = 31;
 
 const uint8_t tunerLedPinLeft = 27;
 const uint8_t tunerLedPinRight  = 28;
+const uint8_t neoPixelDataPin = 1;
 
 #endif

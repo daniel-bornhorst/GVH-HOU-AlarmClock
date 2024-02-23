@@ -4,6 +4,8 @@
 #include "ClockGlobals.h"
 #include "elapsedMillis.h"
 #include <Bounce2.h>
+#include <Adafruit_NeoPixel.h>
+#include "GordonSample.h"
 
 #ifdef ARDUINO_TEENSY41  //---------------------------------------------------------------------
 #define ENCODER_DO_NOT_USE_INTERRUPTS
@@ -15,10 +17,18 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
+#include <Tlv493d.h>
 
 #define SDCARD_CS_PIN BUILTIN_SDCARD
 #define SDCARD_MOSI_PIN 11  // not actually used
 #define SDCARD_SCK_PIN 13   // not actually used
+
+
+typedef struct {
+  uint8_t pixelData[8][4];  // Segment index 2 is the colon ':' on this display
+  unsigned long holdTime; // in milliseconds
+  uint8_t controlBits;
+} PixelFrame;
 
 
 // Audio Stuff
@@ -26,26 +36,43 @@ AudioPlaySdWav playWav1;
 AudioPlaySdWav playWav2;
 AudioPlaySdWav playWav3;
 AudioSynthNoisePink noise1;
+AudioPlayMemory playMem1;
 //AudioAnalyzeRMS peak1;
 AudioAnalyzePeak peak1;
 AudioMixer4 mixer1;
-AudioOutputI2S headphones;
+AudioMixer4 mixer2;
+AudioEffectFade fade1;
+AudioFilterStateVariable filter1;
+AudioOutputI2S2 headphones;
 AudioConnection c1(noise1, 0, mixer1, 0);
 AudioConnection c2(playWav1, 0, mixer1, 1);
 AudioConnection c3(playWav2, 0, mixer1, 2);
 AudioConnection c4(playWav3, 0, mixer1, 3);
-AudioConnection c5(mixer1, peak1);
-AudioConnection c6(mixer1, 0, headphones, 0);
-AudioConnection c7(mixer1, 0, headphones, 1);
+AudioConnection c5(mixer1, fade1);
+AudioConnection c6(fade1, 0, mixer2, 0);
+AudioConnection c7(playMem1, 0, mixer2, 1);
+AudioConnection c8(mixer2, peak1);
+AudioConnection c9(mixer2, 0, filter1, 0);
+AudioConnection c10(filter1, 2, headphones, 0);
+AudioConnection c11(filter1, 2, headphones, 1);
+
+#endif  //---------------------------------------------------------------------
+
 
 // Peripheral Devies
-Encoder tunerEncoder(tunerEncoderPin1, tunerEncoderPin2);
-#endif  //---------------------------------------------------------------------
 ClockDisplay display;
+
 
 // State holders
 ClockState clockState = IDLE;
 ToggleSwitchState toggleSwitchState = OFF_SWITCH_STATE;
+
+
+// Magnetic Tuner Position Sensor
+Tlv493d magneticSensor = Tlv493d();
+static float cookedY = 0;
+float rawY = 0;
+
 
 // Buttons
 Bounce2::Button sleepButton = Bounce2::Button();
@@ -54,14 +81,13 @@ Bounce2::Button hourButton = Bounce2::Button();
 Bounce2::Button minuteButton = Bounce2::Button();
 Bounce2::Button snoozButton = Bounce2::Button();
 
+
 // Timers
 elapsedMillis idleTimeoutTimer;
 elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
-elapsedMillis ledToggleTimer;
-elapsedMillis ledOnTimeTimer;
 elapsedMillis modeSwitchPollTimer;
-elapsedMillis dynamicRefreshUpdateTimer;
+
 
 // Consts
 const int defaultIdleTimeoutTime = 5000;
@@ -73,15 +99,13 @@ long unsigned int glitchTimeoutTime = 240000;  // 4 min
 long unsigned const int ledOnTime = 10;
 const int vuMeterRefreshRate = 42;
 long unsigned const int modeSwitchPollRate = 10;
-long unsigned const int dynamicRefreshUpdateRate = 250;
-long unsigned const int watchdogInterval = 30000;  // 30 secnds
+
 
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long tunerPosition = 0;
-long unsigned int ledToggleTime = 0;
-bool ledToggle = false;
 bool radioOn = false;
+ClockState stateHistory[10];
 
 
 void setup() {
@@ -89,6 +113,8 @@ void setup() {
   // Serial
   Serial.begin(9600);
   delay(1000);
+
+  magneticSensor.begin();
 
   // Button Setup
   sleepButton.attach(SLEEP_BUTTON, INPUT_PULLUP);
@@ -116,6 +142,7 @@ void setup() {
   display.setTime(7, 6);
   display.playIdleAnimation();
 
+
 #ifdef ARDUINO_TEENSY41
 
   pinMode(tunerLedPinRight, INPUT_PULLUP);
@@ -128,22 +155,35 @@ void setup() {
     delay(500);
   }
 
+  pixelSetup();
+
   delay(1000);
+  
   // Audio Setup
   AudioMemory(10);
+
+  mixer1.gain(0, 0.0);
+  mixer1.gain(1, 0.5);
+  mixer1.gain(2, 0.0);
+  mixer1.gain(3, 0.0);
+  mixer2.gain(0, 1.0);
+  mixer2.gain(1, 1.0);
+
+  filter1.frequency(1000.0);
+
+  fade1.fadeOut(10);
+
   playWav1.play("ETNL.WAV");
   delay(1000);
+  
   playWav2.play("LUCIUS.WAV");
   delay(1000);
+
   playWav3.play("NUMBERS.WAV");
   delay(1000);
 
   noise1.amplitude(0.5);
 
-  mixer1.gain(0, 0.0);
-  mixer1.gain(1, 0.0);
-  mixer1.gain(2, 0.0);
-  mixer1.gain(3, 0.0);
 #endif
 
   delay(1000);
@@ -163,6 +203,7 @@ void loop() {
     display.loop();
     inputPollingLoop();
     audioLoop();
+    pixelLoop();
   }
 
   switch (clockState) {
@@ -196,13 +237,27 @@ void loop() {
 
 void inputPollingLoop() {
 
-  // Check for button presses ---------------------------------------------
+  buttonLoop();
+  modeSwitchLoop();
+
+
+#ifdef ARDUINO_TEENSY41
+  tunerSwitchLoop();
+  radioTuningWheelLoop();
+#endif
+
+}
+
+
+void buttonLoop() {
+  // Update Button States
   sleepButton.update();
   wakeButton.update();
   hourButton.update();
   minuteButton.update();
   snoozButton.update();
 
+  // Check For Button Presses
   if (sleepButton.fell()) {
     buttonPressed(SLEEP_BUTTON);
   } else if (wakeButton.fell()) {
@@ -213,19 +268,12 @@ void inputPollingLoop() {
     buttonPressed(MINUTE_BUTTON);
   } else if (snoozButton.fell()) {
     buttonPressed(SNOOZ_BUTTON);
-  } else if (snoozButton.isPressed()) {
-    if (dynamicRefreshUpdateTimer > dynamicRefreshUpdateRate) {
-      idleTimeoutTimer = 0;
-      dynamicRefreshUpdateTimer = 0;
-      display.setRefreshRate((snoozButton.currentDuration() * 2) + 1);
-      //Serial.println(snoozButton.currentDuration());
-    }
-  } else if (snoozButton.released()) {
-    idleTimeoutTimer = 0;
   }
+}
 
 
-  // Check The Mode Switch -----------------------------------------------------
+void modeSwitchLoop() {
+  // Check The Mode Switch at an interval
   if (modeSwitchPollTimer >= modeSwitchPollRate) {
     int switchVal = analogRead(MODE_SWITCH);
     ToggleSwitchState newSwitchState;
@@ -249,13 +297,17 @@ void inputPollingLoop() {
     // Serial.println();
     modeSwitchPollTimer = 0;
   }
+}
 
-#ifdef ARDUINO_TEENSY41
+// FOR TESTING PURPOSES
+void tunerSwitchLoop() {
   if (digitalRead(tunerLedPinRight) == 0) {
       
       // glitchTimer = glitchTimeoutTime+1;
       // checkForGlitchTimeout();
       if (radioOn == true) {
+        // Force the clock into idle mode
+        // Which also turns radio off
         idleTimeoutTimer = idleTimeoutTime+1;
         checkForIdleTimeout();
       }
@@ -265,30 +317,52 @@ void inputPollingLoop() {
   }
   else {
     if (radioOn == false) {
+      // Force Radio on 
       tunerPosition -= 1;
+      setState(RADIO);
     }
     radioOn = true;
   }
-  
+}
 
 
-  // Poll Tuner Encoder -------------------------------------------------------
+void radioTuningWheelLoop() {
+
+  if (radioOn == false) {
+    //muteRadio();         //TESTING
+    fade1.fadeOut(500);
+    return;
+  }
+  else {
+    //mixer1.gain(1, 0.5); //TESTING
+    fade1.fadeIn(500);
+  }
+
   // Only change state if value has changed by a determined amount
-  long newTunerPosition = tunerEncoder.read();
+  long newTunerPosition;
+  magneticSensor.updateData();
+  delay(10);
+  rawY = magneticSensor.getAzimuth();
+  cookedY = 0.85 * cookedY + 0.15 * rawY;
+  newTunerPosition = round((cookedY*10)+25);
+  // Serial.println(newTunerPosition);
+
+  // FOR TESTING
+  return;
+  // -----------
+
   if (newTunerPosition != tunerPosition) {
 
-    setState(RADIO);
+    //setState(RADIO);
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
     if(tunerPosition < 0) {
       tunerPosition = 0;
-      tunerEncoder.write(0);
     }
     else if (tunerPosition > 50) {
       tunerPosition = 50;
-      tunerEncoder.write(50);
     }
     
     float gainNoise;
@@ -352,14 +426,12 @@ void inputPollingLoop() {
       mixer1.gain(3, 0);
     }
 
-    Serial.print("gainNoise: ");
-    Serial.print(gainNoise);
-    Serial.print("  gainRadio: ");
-    Serial.println(gainRadio);
-    Serial.println(tunerPosition);
+    // Serial.print("gainNoise: ");
+    // Serial.print(gainNoise);
+    // Serial.print("  gainRadio: ");
+    // Serial.println(gainRadio);
+    // Serial.println(tunerPosition);
   }
-#endif
-
 }
 
 
@@ -408,32 +480,32 @@ void buttonPressed(ClockInput pressedButton) {
   idleTimeoutTimer = 0;
 
   if (pressedButton == SLEEP_BUTTON) {
-    setState(SLEEP);
     display.playSleepAnimation();
+    triggerBlueNightRider();
+    setState(SLEEP);
   } 
   else if (pressedButton == WAKE_BUTTON) {
-    setState(WAKE);
     display.playWakeAnimation();
+    setState(WAKE);
   } 
   else if (pressedButton == HOUR_BUTTON) {
-    setState(HOUR);
     display.playHourAnimation();
+    triggerRedStreak();
+    setState(HOUR);
   } 
   else if (pressedButton == MINUTE_BUTTON) {
-    setState(MINUTE);
     //display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
     //display.scrollString("yo");
     display.playMinuteAnimation();
+    setState(MINUTE);
   } 
   else if (pressedButton == SNOOZ_BUTTON) {
+    //display.playSnoozAnimation();
+    display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
+    // display.displayString("AT[]m");
+    // display.displayString("A@#m");
     setState(SNOOZ);
-    display.playSnoozAnimation();
   }
-
-#ifdef ARDUINO_TEENSY41
-  Serial.print("audio usage:  ");
-  Serial.println(AudioProcessorUsage());
-#endif
 }
 
 
@@ -444,12 +516,8 @@ void checkForIdleTimeout() {
     idleTimeoutTime = defaultIdleTimeoutTime;
     display.playIdleAnimation();
 
-    #ifdef ARDUINO_TEENSY41
-    mixer1.gain(0, 0.0);
-    mixer1.gain(1, 0.0);
-    mixer1.gain(2, 0.0);
-    mixer1.gain(3, 0.0);
-    #endif
+    muteRadio();
+    stopPixelSequencer();
   }
 }
 
@@ -503,4 +571,62 @@ void setState(ClockState newClockState) {
   Serial.print("Clock State = ");
   Serial.print(stateString);
   Serial.println();
+  updateStateHistory();
+  if (checkForStateMatch()) {
+    triggerPoliceLights();
+  }
+}
+
+
+void updateStateHistory() {
+  for (int i = 9; i >= 1; --i) {
+    stateHistory[i] = stateHistory[i-1];
+  }
+
+  stateHistory[0] = clockState;
+
+  Serial.print("StateHistory: ");
+
+  for (int i = 0; i < 10; ++i) {
+    Serial.print(stateHistory[i]);
+
+    if (i < 9) {
+      Serial.print(", ");
+    }
+  }
+
+  Serial.println();
+}
+
+
+// Returns true if a pattern matches
+bool checkForStateMatch() {
+  for (int i = 0; i < 8; ++i) {
+    switch (i) {
+      case 0: if(stateHistory[0] == SLEEP  ) { break; } else { return false; }
+      case 1: if(stateHistory[1] == WAKE   ) { break; } else { return false; }
+      case 2: if(stateHistory[2] == SLEEP  ) { break; } else { return false; }
+      case 3: if(stateHistory[3] == SLEEP  ) { break; } else { return false; }
+      case 4: if(stateHistory[4] == MINUTE ) { break; } else { return false; }
+      case 5: if(stateHistory[5] == MINUTE ) { break; } else { return false; }
+      case 6: if(stateHistory[6] == HOUR   ) { break; } else { return false; }
+      case 7: if(stateHistory[7] == MINUTE ) { break; } else { return false; }
+      default: 
+        return false;
+    }
+  }
+  playMem1.play(gordonLikesThatSample);
+  Serial.println("MATCH!!");
+  return true;
+}
+
+
+void muteRadio() {
+  fade1.fadeOut(500);
+  // #ifdef ARDUINO_TEENSY41
+  //   mixer1.gain(0, 0.0);
+  //   mixer1.gain(1, 0.0);
+  //   mixer1.gain(2, 0.0);
+  //   mixer1.gain(3, 0.0);
+  // #endif
 }

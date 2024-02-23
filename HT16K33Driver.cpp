@@ -767,7 +767,7 @@ uint8_t HT16K33Driver::getBinaryChar(uint8_t character)
       return 0b00111000;
     case 'm':
     case 'M':
-      return 0b01010110;
+      return 0b00010101;
     case 'n':
       return 0b01010100;
     case 'N':
@@ -840,6 +840,16 @@ uint8_t HT16K33Driver::getBinaryChar(uint8_t character)
       return 0b00001000;
     case '.':
       return 0b10000000;
+    case ']':
+      return 0b00100111;
+    case '[':
+      return 0b00110011;
+    case '|':
+      return 0b11010100;
+    case '@':
+      return 0b01110000;
+    case '#':
+      return 0b01111001;
   }
 
   return 0;
