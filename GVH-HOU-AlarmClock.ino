@@ -162,12 +162,12 @@ void setup() {
   // Audio Setup
   AudioMemory(10);
 
-  mixer1.gain(0, 0.0);
-  mixer1.gain(1, 0.5);
-  mixer1.gain(2, 0.0);
-  mixer1.gain(3, 0.0);
-  mixer2.gain(0, 1.0);
-  mixer2.gain(1, 1.0);
+  mixer1.gain(0, 0.0); // Tuning Noise
+  mixer1.gain(1, 0.5); // ETNL
+  mixer1.gain(2, 0.0); // Lucius
+  mixer1.gain(3, 0.0); // Number Stations
+  mixer2.gain(0, 1.0); // Radio Mix
+  mixer2.gain(1, 0.8); // Gordon Sample
 
   filter1.frequency(1000.0);
 
@@ -272,6 +272,41 @@ void buttonLoop() {
 }
 
 
+void buttonPressed(ClockInput pressedButton) {
+
+  idleTimeoutTimer = 0;
+
+  if (pressedButton == SLEEP_BUTTON) {
+    display.playSleepAnimation();
+    //triggerBlueNightRider();
+    setState(SLEEP);
+  } 
+  else if (pressedButton == WAKE_BUTTON) {
+    display.playWakeAnimation();
+    setState(WAKE);
+  } 
+  else if (pressedButton == HOUR_BUTTON) {
+    display.playHourAnimation();
+    setState(HOUR);
+  } 
+  else if (pressedButton == MINUTE_BUTTON) {
+    //display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
+    //display.scrollString("yo");
+    display.playMinuteAnimation();
+    setState(MINUTE);
+  } 
+  else if (pressedButton == SNOOZ_BUTTON) {
+    //display.playSnoozAnimation();
+    display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
+    // display.displayString("AT[]m");
+    // display.displayString("A@#m");
+    triggerRedStreak();
+    display.playRedStreak();
+    setState(SNOOZ);
+  }
+}
+
+
 void modeSwitchLoop() {
   // Check The Mode Switch at an interval
   if (modeSwitchPollTimer >= modeSwitchPollRate) {
@@ -330,12 +365,12 @@ void radioTuningWheelLoop() {
 
   if (radioOn == false) {
     //muteRadio();         //TESTING
-    fade1.fadeOut(500);
+    fade1.fadeOut(200);
     return;
   }
   else {
     //mixer1.gain(1, 0.5); //TESTING
-    fade1.fadeIn(500);
+    fade1.fadeIn(200);
   }
 
   // Only change state if value has changed by a determined amount
@@ -468,44 +503,12 @@ void radioStateLoop() {
         //uint8_t peakScaled = peak1.read() * 70.0;
         uint8_t peakScaled = peak1.read()*15;
         display.setVuMeter(peakScaled);
+        setPixelVUMeter(peakScaled);
+
       }
     }
   }
 #endif
-}
-
-
-void buttonPressed(ClockInput pressedButton) {
-
-  idleTimeoutTimer = 0;
-
-  if (pressedButton == SLEEP_BUTTON) {
-    display.playSleepAnimation();
-    triggerBlueNightRider();
-    setState(SLEEP);
-  } 
-  else if (pressedButton == WAKE_BUTTON) {
-    display.playWakeAnimation();
-    setState(WAKE);
-  } 
-  else if (pressedButton == HOUR_BUTTON) {
-    display.playHourAnimation();
-    triggerRedStreak();
-    setState(HOUR);
-  } 
-  else if (pressedButton == MINUTE_BUTTON) {
-    //display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
-    //display.scrollString("yo");
-    display.playMinuteAnimation();
-    setState(MINUTE);
-  } 
-  else if (pressedButton == SNOOZ_BUTTON) {
-    //display.playSnoozAnimation();
-    display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
-    // display.displayString("AT[]m");
-    // display.displayString("A@#m");
-    setState(SNOOZ);
-  }
 }
 
 

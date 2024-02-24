@@ -115,6 +115,12 @@ void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
 }
 
 
+ void ClockDisplay::playRedStreak() {
+  loadAnimation(diagonalWipe1);
+  Serial.println("Load Animation: RED STREEEEK");
+ }
+
+
 void ClockDisplay::scrollString(String buff) {
   setStringBuffer( String("    " + buff) );
   _stringScrollIndex = 0;
