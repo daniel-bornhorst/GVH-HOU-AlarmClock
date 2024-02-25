@@ -14,9 +14,7 @@ typedef enum ClockState
   HOUR,
   MINUTE,
   SNOOZ,
-  RADIO,
-  ACTUAL_TIME,
-  OSCDISPLAY
+  RADIO
 } clock_state_;
 
 // Represents the available user inputs on the clock
@@ -26,13 +24,15 @@ typedef enum ClockState
 // Pin Values for Teensy
 typedef enum ClockInput
 {
-  SLEEP_BUTTON = 36,
-  WAKE_BUTTON = 35,
-  HOUR_BUTTON = 34,
-  MINUTE_BUTTON = 33,
-  SNOOZ_BUTTON = 37,
-  MODE_SWITCH = 38,
-  TUNING_POT = A12
+  SLEEP_BUTTON = 28,
+  WAKE_BUTTON = 30,
+  HOUR_BUTTON = 29,
+  MINUTE_BUTTON = 31,
+  SNOOZ_BUTTON = 26,
+  ON_SWITCH = 9,
+  OFF_SWITCH = 10,
+  RADIO_SWITCH = 11,
+  ALARM_SWITCH = 12
 } clock_input_;
 #else
 
@@ -52,17 +52,12 @@ typedef enum ClockInput
 // Represents the different states of the four way toggle
 typedef enum ToggleSwitchState
 {
+  NO_SWITCH_STATE,
   ON_SWITCH_STATE,
   OFF_SWITCH_STATE,
-  MUSIC_SWITCH_STATE,
+  RADIO_SWITCH_STATE,
   ALARM_SWITCH_STATE
 } toggle_switch_state_;
 
-const uint8_t tunerEncoderPin1 = 30;
-const uint8_t tunerEncoderPin2 = 31;
-
-const uint8_t tunerLedPinLeft = 27;
-const uint8_t tunerLedPinRight  = 28;
-const uint8_t neoPixelDataPin = 1;
 
 #endif

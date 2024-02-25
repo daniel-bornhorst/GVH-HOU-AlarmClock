@@ -29,6 +29,7 @@ typedef enum DisplayState
 
 class ClockDisplay {
 public:
+
   // Constructors
   ClockDisplay(); // Default constructor
 
@@ -60,6 +61,8 @@ public:
   void setRefreshRate(unsigned long newRefreshRate);
   void clear();
 
+  bool isAnimationRunning();
+
 
 private:
 
@@ -88,6 +91,7 @@ private:
   bool _frameAdvanced = false;
   int _anmiationRepetitions = 0;
   unsigned long _dynamicRefreshRate = 5;
+  bool _animationRunning = false;
 
   void setDisplayState(DisplayState newState);
   void scriptedAnimationLoop(bool newAnimation = false);

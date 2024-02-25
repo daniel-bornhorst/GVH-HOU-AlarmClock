@@ -204,6 +204,7 @@ void ClockDisplay::loadAnimation(const AnimationFrame* newAnimation) {
   _frameTimer = 0;
   _anmiationRepetitions = 0;
   _currentAnimation = newAnimation;
+  _animationRunning = true;
   scriptedAnimationLoop(true); // true indicates that we've loaded a new animation
 }
 
@@ -236,7 +237,8 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
       
       // If the end of a one shot is reached go back to idle animation
       if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
-        playIdleAnimation();
+        //playIdleAnimation();
+        _animationRunning = false;
         return;
       }
 
@@ -293,4 +295,8 @@ void ClockDisplay::setVuMeter(uint8_t level) {
   setDisplayState(VU_METER);
   loadDisplayBuffer(vuLevelDisplayStates[level]);
   _matrix.displayRaw(_displayBuffer);
+}
+
+bool ClockDisplay::isAnimationRunning() {
+  return _animationRunning;
 }
