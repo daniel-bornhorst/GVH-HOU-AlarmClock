@@ -268,3 +268,9 @@ void clearPixels() {
   }
   strip.show();
 }
+
+
+bool isPixelSequenceRunning() {
+  return _scriptRunning;
+
+}

@@ -204,7 +204,8 @@ void loop() {
       checkForGlitchTimeout();
       break;
     case GLITCH:
-      checkForIdleTimeout();
+      //checkForIdleTimeout();
+      if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case SLEEP:
       // glitchTimeoutTime = 35000; // The sleep animation runs for about 38 seconds
@@ -221,6 +222,7 @@ void loop() {
       if (!display.isAnimationRunning()) setState(GLITCH);
       break;
     case SNOOZ:
+      if (!display.isAnimationRunning() && !isPixelSequenceRunning()) setState(IDLE);
       break;
     case RADIO:
       radioStateLoop();
@@ -417,14 +419,14 @@ void tunerSwitchLoop() {
 
 void radioTuningWheelLoop() {
 
-  if (radioOn == false) {
+  if (clockState != RADIO) {
     //muteRadio();         //TESTING
-    fade1.fadeOut(1);
+    fade1.fadeOut(200);
     return;
   }
-  else  {
+  else if (clockState == RADIO) {
     //mixer1.gain(1, 0.5); //TESTING
-    fade1.fadeIn(1);
+    fade1.fadeIn(200);
   }
 
   // Only change state if value has changed by a determined amount
@@ -676,7 +678,7 @@ bool checkForStateMatch() {
 
 
 void muteRadio() {
-  fade1.fadeOut(1);
+  fade1.fadeOut(200);
   // #ifdef ARDUINO_TEENSY41
   //   mixer1.gain(0, 0.0);
   //   mixer1.gain(1, 0.0);
