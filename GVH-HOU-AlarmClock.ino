@@ -39,6 +39,8 @@ AudioAnalyzePeak peak1;
 AudioMixer4 mixer1;
 AudioMixer4 mixer2;
 AudioEffectFade fade1;
+AudioSynthWaveform       waveform1;
+AudioEffectMultiply      multiply1;
 AudioFilterStateVariable filter1;
 AudioOutputI2S2 headphones;
 AudioConnection c1(noise1, 0, mixer1, 0);
@@ -52,6 +54,8 @@ AudioConnection c8(mixer1, peak1);
 AudioConnection c9(mixer2, 0, filter1, 0);
 AudioConnection c10(filter1, 2, headphones, 0);
 AudioConnection c11(filter1, 2, headphones, 1);
+AudioConnection          c12(waveform1, 0, multiply1, 1);
+AudioConnection          c13(playMem1, 0, multiply1, 0);
 
 
 // Peripheral Devies
@@ -176,6 +180,8 @@ void setup() {
   delay(1000);
 
   noise1.amplitude(0.5);
+
+  waveform1.begin(1, 1000, WAVEFORM_SINE);
 
   delay(1000);
 
@@ -436,7 +442,7 @@ void radioTuningWheelLoop() {
   rawY = magneticSensor.getAzimuth();
   cookedY = 0.85 * cookedY + 0.15 * rawY;
   newTunerPosition = round((cookedY*10)+25);
-  Serial.println(newTunerPosition);
+  //Serial.println(newTunerPosition);
 
   // // FOR TESTING
   // return;
