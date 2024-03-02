@@ -14,12 +14,14 @@ typedef enum ClockState
   HOUR,
   MINUTE,
   SNOOZ,
-  RADIO
+  ON_MODE,
+  OFF_MODE,
+  RADIO_MODE,
+  ALARM_MODE
 } clock_state_;
 
 // Represents the available user inputs on the clock
 // the values are the teensy pins connected the input
-#ifdef ARDUINO_TEENSY41
 
 // Pin Values for Teensy
 typedef enum ClockInput
@@ -34,20 +36,6 @@ typedef enum ClockInput
   RADIO_SWITCH = 11,
   ALARM_SWITCH = 12
 } clock_input_;
-#else
-
-// Pin Values for QTPY
-typedef enum ClockInput
-{
-  SLEEP_BUTTON = 3,
-  WAKE_BUTTON = 1,
-  HOUR_BUTTON = 2,
-  MINUTE_BUTTON = 8,
-  SNOOZ_BUTTON = 10,
-  MODE_SWITCH = A0,
-  TUNING_POT = A1
-} clock_input_;
-#endif
 
 // Represents the different states of the four way toggle
 typedef enum ToggleSwitchState

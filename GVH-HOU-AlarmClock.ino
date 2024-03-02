@@ -89,6 +89,11 @@ elapsedMillis modeSwitchPollTimer;
 
 
 // Consts
+const unsigned int oneMinutes = 60000;
+const unsigned int tenMinutes = 600000;
+const unsigned int fourMinutes = 240000;
+const unsigned int thirtySeconds = 30000;
+
 const int defaultIdleTimeoutTime = 5000;
 const int defaultGlitchTimeoutTime = 30000;
 long unsigned int tunerModeTimeoutTime = 3000;
@@ -103,7 +108,6 @@ long unsigned const int modeSwitchPollRate = 1;
 // Variables
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long tunerPosition = 0;
-bool radioOn = false;
 ClockState stateHistory[10];
 
 
@@ -210,12 +214,9 @@ void loop() {
       checkForGlitchTimeout();
       break;
     case GLITCH:
-      //checkForIdleTimeout();
       if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case SLEEP:
-      // glitchTimeoutTime = 35000; // The sleep animation runs for about 38 seconds
-      // checkForGlitchTimeout();
       if (!display.isAnimationRunning()) setState(GLITCH);
       break;
     case WAKE:
@@ -230,8 +231,17 @@ void loop() {
     case SNOOZ:
       if (!display.isAnimationRunning() && !isPixelSequenceRunning()) setState(IDLE);
       break;
-    case RADIO:
+    case ON_MODE:
+      checkForIdleTimeout();
+      break;
+    case OFF_MODE:
+      checkForIdleTimeout();
+      break;
+    case RADIO_MODE:
       radioStateLoop();
+      break;
+    case ALARM_MODE:
+      checkForIdleTimeout();
       break;
     default:
       checkForIdleTimeout();
@@ -244,7 +254,6 @@ void inputPollingLoop() {
 
   buttonLoop();
   modeSwitchLoop();
-  tunerSwitchLoop();
   radioTuningWheelLoop();
 
 }
@@ -260,177 +269,63 @@ void buttonLoop() {
 
   // Check For Button Presses
   if (sleepButton.fell()) {
-    buttonPressed(SLEEP_BUTTON);
-  } else if (wakeButton.fell()) {
-    buttonPressed(WAKE_BUTTON);
-  } else if (hourButton.fell()) {
-    buttonPressed(HOUR_BUTTON);
-  } else if (minuteButton.fell()) {
-    buttonPressed(MINUTE_BUTTON);
-  } else if (snoozButton.fell()) {
-    buttonPressed(SNOOZ_BUTTON);
-  }
-}
-
-
-void buttonPressed(ClockInput pressedButton) {
-
-  idleTimeoutTimer = 0;
-
-  if (pressedButton == SLEEP_BUTTON) {
-    display.playSleepAnimation();
-    //triggerBlueNightRider();
     setState(SLEEP);
-  } 
-  else if (pressedButton == WAKE_BUTTON) {
-    display.playWakeAnimation();
+  } else if (wakeButton.fell()) {
     setState(WAKE);
-  } 
-  else if (pressedButton == HOUR_BUTTON) {
-    display.playHourAnimation();
+  } else if (hourButton.fell()) {
     setState(HOUR);
-  } 
-  else if (pressedButton == MINUTE_BUTTON) {
-    //display.scrollString("JARED IS ALIVE AND WELL NOTHING TO SEE HERE");
-    //display.scrollString("yo");
-    display.playMinuteAnimation();
+  } else if (minuteButton.fell()) {
     setState(MINUTE);
-  } 
-  else if (pressedButton == SNOOZ_BUTTON) {
-    //display.playSnoozAnimation();
-    display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
-    // display.displayString("AT[]m");
-    // display.displayString("A@#m");
-    triggerRedStreak();
-    display.playRedStreak();
+  } else if (snoozButton.fell()) {
     setState(SNOOZ);
   }
 }
 
 
 void modeSwitchLoop() {
+
+
   // Check The Mode Switch at an interval
   if (modeSwitchPollTimer >= modeSwitchPollRate) {
     ToggleSwitchState newSwitchState;
 
-    // if (switchVal < 50) {
-    //   newSwitchState = OFF_SWITCH_STATE;
-    // } else if (switchVal < 300) {
-    //   newSwitchState = ON_SWITCH_STATE;
-    // } else if (switchVal < 600) {
-    //   newSwitchState = MUSIC_SWITCH_STATE;
-    // } else {
-    //   newSwitchState = ALARM_SWITCH_STATE;
-    // }
-
-
     if (digitalRead(ON_SWITCH) == 0) {
       newSwitchState = ON_SWITCH_STATE;
-      if (radioOn == true) {
-        // Force the clock into idle mode
-        // Which also turns radio off
-        idleTimeoutTimer = idleTimeoutTime+1;
-        checkForIdleTimeout();
-      }
-
-      radioOn = false;
     }
     else if (digitalRead(OFF_SWITCH) == 0) {
       newSwitchState = OFF_SWITCH_STATE;
-      if (radioOn == true) {
-        // Force the clock into idle mode
-        // Which also turns radio off
-        idleTimeoutTimer = idleTimeoutTime+1;
-        checkForIdleTimeout();
-      }
-
-      radioOn = false;
     }
     else if (digitalRead(RADIO_SWITCH) == 0) {
       newSwitchState = RADIO_SWITCH_STATE;
-
-      if (radioOn == false) {
-        // Force Radio on 
-        tunerPosition -= 1;
-        setState(RADIO);
-      }
-      radioOn = true;
     }
     else if (digitalRead(ALARM_SWITCH) == 0) {
       newSwitchState = ALARM_SWITCH_STATE;
-      if (radioOn == true) {
-        // Force the clock into idle mode
-        // Which also turns radio off
-        idleTimeoutTimer = idleTimeoutTime+1;
-        checkForIdleTimeout();
-      }
-
-      radioOn = false;
     }
 
-    
-    if (newSwitchState != toggleSwitchState) {
+    if (toggleSwitchState != newSwitchState) {
       toggleSwitchState = newSwitchState;
-      Serial.print("Switch val: ");
       switch(toggleSwitchState) {
-        case ON_SWITCH_STATE:
-          Serial.print("ON");
-          break;
-        case OFF_SWITCH_STATE:
-          Serial.print("OFF");
-          break;
-        case RADIO_SWITCH_STATE:
-          Serial.print("RADIO");
-          break;
-        case ALARM_SWITCH_STATE:
-          Serial.print("ALARM");
-          break;
-        default:
-          Serial.print("?");
-          break;
+        case ON_SWITCH_STATE: setState(ON_MODE); break;
+        case OFF_SWITCH_STATE: setState(OFF_MODE); break;
+        case RADIO_SWITCH_STATE: setState(RADIO_MODE); break;
+        case ALARM_SWITCH_STATE: setState(ALARM_MODE); break;
+        default: setState(OFF_MODE); break;
       }
-      Serial.println();
     }
 
     modeSwitchPollTimer = 0;
   }
 }
 
-// FOR TESTING PURPOSES
-void tunerSwitchLoop() {
-  // if (digitalRead(tunerLedPinRight) == 0) {
-      
-  //     // glitchTimer = glitchTimeoutTime+1;
-  //     // checkForGlitchTimeout();
-  //     if (radioOn == true) {
-  //       // Force the clock into idle mode
-  //       // Which also turns radio off
-  //       idleTimeoutTimer = idleTimeoutTime+1;
-  //       checkForIdleTimeout();
-  //     }
-
-  //     radioOn = false;
-      
-  // }
-  // else {
-  //   if (radioOn == false) {
-  //     // Force Radio on 
-  //     tunerPosition -= 1;
-  //     setState(RADIO);
-  //   }
-  //   radioOn = true;
-  // }
-}
-
 
 void radioTuningWheelLoop() {
 
-  if (clockState != RADIO) {
+  if (clockState != RADIO_MODE) {
     //muteRadio();         //TESTING
     fade1.fadeOut(200);
     return;
   }
-  else if (clockState == RADIO) {
+  else if (clockState == RADIO_MODE) {
     //mixer1.gain(1, 0.5); //TESTING
     fade1.fadeIn(200);
   }
@@ -450,7 +345,7 @@ void radioTuningWheelLoop() {
 
   if (newTunerPosition != tunerPosition) {
 
-    //setState(RADIO);
+    //setState(RADIO_MODE);
     idleTimeoutTime = tunerModeTimeoutTime;
     idleTimeoutTimer = 0;
 
@@ -553,7 +448,7 @@ void audioLoop() {
 
 
 void radioStateLoop() {
-  if (clockState == RADIO) {
+  if (clockState == RADIO_MODE) {
     if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
       vuMeterRefreshTimer = 0;
@@ -585,6 +480,11 @@ void checkForGlitchTimeout() {
 
 
 void setState(ClockState newClockState) {
+
+  if (newClockState == clockState) {
+    return;
+  }
+
   clockState = newClockState;
 
   String stateString;
@@ -593,39 +493,48 @@ void setState(ClockState newClockState) {
       stateString = "Simple";
       break;
     case IDLE:
+      startIdle();
       stateString = "Idle";
-      glitchTimer = 0;
-      idleTimeoutTime = defaultIdleTimeoutTime;
-      display.playIdleAnimation();
-      muteRadio();
-      stopPixelSequencer();
       break;
     case GLITCH:
+      startGlitch();
       stateString = "Glitch";
-      glitchTimer = 0;
-      idleTimeoutTimer = 0;
-      idleTimeoutTime = defaultIdleTimeoutTime;
-      glitchTimeoutTime = defaultGlitchTimeoutTime;
-      display.playGlitchAnimation();
-      triggerGlitchFlash();
       break;
     case SLEEP:
+      startSleep();
       stateString = "Sleep";
       break;
     case WAKE:
+      startWake();
       stateString = "Wake";
       break;
     case HOUR:
+      startHour();
       stateString = "Hour";
       break;
     case MINUTE:
+      startMinute();
       stateString = "Minute";
       break;
     case SNOOZ:
+      startSnooz();
       stateString = "Snooz";
       break;
-    case RADIO:
+    case ON_MODE:
+      startOnMode();
+      stateString = "On";
+      break;
+    case OFF_MODE:
+      startOffMode();
+      stateString = "Off";
+      break;
+    case RADIO_MODE:
+      startRadioMode();
       stateString = "Radio";
+      break;
+    case ALARM_MODE:
+      startAlarmMode();
+      stateString = "Alarm";
       break;
     default:
       break;
@@ -633,10 +542,82 @@ void setState(ClockState newClockState) {
   Serial.print("Clock State = ");
   Serial.print(stateString);
   Serial.println();
+
   updateStateHistory();
   if (checkForStateMatch()) {
     triggerPoliceLights();
+    display.displayInt(911);
+    display.blink(true);
   }
+}
+
+
+void startIdle() {
+  glitchTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+  display.playIdleAnimation();
+  muteRadio();
+  stopPixelSequencer();
+}
+
+
+void startGlitch() {
+  glitchTimer = 0;
+  idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+  glitchTimeoutTime = defaultGlitchTimeoutTime;
+  display.playGlitchAnimation();
+  triggerGlitchFlash();
+}
+
+
+void startSleep() {
+  display.playSleepAnimation();
+  triggerBlueNightRider();
+}
+
+
+void startWake() {
+  display.playWakeAnimation();
+}
+
+void startHour() {
+  display.playHourAnimation();
+}
+
+
+void startMinute() {
+  display.playMiniuteAnimation();
+}
+
+
+void startSnooz() {
+  triggerRedStreak();
+  display.playRedStreak();
+}
+
+
+void startOnMode() {
+  idleTimeoutTimer = 0;
+}
+
+
+void startOffMode() {
+  idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+  display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
+  // display.displayString("AT[]m");
+  // display.displayString("A@#m");
+}
+
+
+void startRadioMode() {
+  idleTimeoutTimer = 0;
+}
+
+
+void startAlarmMode() {
+  idleTimeoutTimer = 0;
 }
 
 
