@@ -167,6 +167,10 @@ void ClockDisplay::setStringBuffer(int intValBuff) {
 
 void ClockDisplay::setDisplayState(DisplayState newState) {
   if (_displayState != newState) {
+    // if (newState != SCRIPTED_ANIMATION) {
+    //   _animationRunning = false;
+    // }
+    blink(false);
     _matrix.brightness(DEFAULT_BRIGHTNESS);
     _displayState = newState;
   }
@@ -180,6 +184,7 @@ void ClockDisplay::setRefreshRate(unsigned long newRefreshRate) {
 
 
 void ClockDisplay::clear() {
+  _animationRunning = false;
   _matrix.displayClear();
 }
 
@@ -299,4 +304,13 @@ void ClockDisplay::setVuMeter(uint8_t level) {
 
 bool ClockDisplay::isAnimationRunning() {
   return _animationRunning;
+}
+
+void ClockDisplay::blink(bool blink) {
+  if (blink) {
+    _matrix.blink(1);
+  }
+  else {
+    _matrix.blink(0);
+  }
 }

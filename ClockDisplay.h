@@ -62,6 +62,7 @@ public:
   void clear();
 
   bool isAnimationRunning();
+  void blink(bool blink);
 
 
 private:
