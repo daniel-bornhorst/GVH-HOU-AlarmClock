@@ -45,6 +45,8 @@ public:
   void playSnoozAnimation();
   void playSnoozQueueAnimation(int animationIndex);
   void playRedStreak();
+  void playReverseRedStreak();
+  void playOnStrobeAnimation();
 
   void setVuMeter(uint8_t level);
 

@@ -71,6 +71,11 @@ void ClockDisplay::playWakeAnimation() {
   Serial.println("Load Animation: Wake");
 }
 
+void ClockDisplay::playOnStrobeAnimation() {
+  loadAnimation(onStrobe);
+  Serial.println("Load Animation: OnStrobe");
+}
+
 
 void ClockDisplay::playHourAnimation() {
   //loadAnimation(middleOutWipe1);
@@ -118,6 +123,12 @@ void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
  void ClockDisplay::playRedStreak() {
   loadAnimation(diagonalWipe1);
   Serial.println("Load Animation: RED STREEEEK");
+ }
+
+
+ void ClockDisplay::playReverseRedStreak() {
+  loadAnimation(reverserRedStreak);
+  Serial.println("Load Animation: ReVeRSE RED STREEEEK");
  }
 
 

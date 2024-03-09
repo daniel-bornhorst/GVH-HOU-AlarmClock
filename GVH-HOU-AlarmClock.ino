@@ -50,7 +50,7 @@ AudioConnection c3(playWav2, 0, mixer1, 2);
 AudioConnection c4(playWav3, 0, mixer1, 3);
 AudioConnection c5(mixer1, fade1);
 AudioConnection c6(fade1, 0, mixer2, 0);
-AudioConnection c7(multiply1, 0, mixer2, 1);
+AudioConnection c7(playMem1, 0, mixer2, 1);
 AudioConnection c8(mixer1, peak1);
 AudioConnection c9(mixer2, 0, filter1, 0);
 AudioConnection c10(filter1, 2, headphones, 0);
@@ -87,6 +87,7 @@ elapsedMillis idleTimeoutTimer;
 elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
 elapsedMillis modeSwitchPollTimer;
+elapsedMillis radioTimeoutTimer;
 
 
 // Consts
@@ -94,15 +95,15 @@ const unsigned int fiveSeconds = 5000;
 const unsigned int tenSeconds = 10000;
 const unsigned int fifteenSeconds = 15000;
 const unsigned int thirtySeconds = 30000;
-const unsigned int oneMinutes = 60000;
+const unsigned int oneMinute = 60000;
 const unsigned int fourMinutes = 240000;
 const unsigned int tenMinutes = 600000;
 const unsigned int thirtyMinutes = 1800000;
 
-const int defaultIdleTimeoutTime = 5000;
-const int defaultGlitchTimeoutTime = 240000;
-long unsigned int tunerModeTimeoutTime = 3000;
-long unsigned int glitchTimeoutTime = 240000; // 4 min
+const int defaultIdleTimeoutTime = fiveSeconds;
+const int defaultGlitchTimeoutTime = fourMinutes;
+long unsigned int radioTimeoutTime = fiveSeconds;
+long unsigned int glitchTimeoutTime = fourMinutes; // 4 min
 const int vuMeterRefreshRate = 42;
 long unsigned const int modeSwitchPollRate = 1;
 
@@ -111,6 +112,8 @@ long unsigned const int modeSwitchPollRate = 1;
 long unsigned int idleTimeoutTime = defaultIdleTimeoutTime;
 long tunerPosition = 0;
 ClockState stateHistory[10];
+bool snoozDirectionToggle = true;
+bool radioTimedOut = false;
 
 
 void setup() {
@@ -170,7 +173,7 @@ void setup() {
   mixer1.gain(2, 0.0); // Lucius
   mixer1.gain(3, 0.0); // Number Stations
   mixer2.gain(0, 1.0); // Radio Mix
-  mixer2.gain(1, 0.8); // Gordon Sample
+  mixer2.gain(1, 1.0); // Gordon Sample
 
   filter1.frequency(1000.0);
 
@@ -237,13 +240,13 @@ void loop() {
       checkForIdleTimeout();
       break;
     case OFF_MODE:
-      checkForIdleTimeout();
+      checkForGlitchTimeout();
       break;
     case RADIO_MODE:
       radioStateLoop();
       break;
     case ALARM_MODE:
-      checkForIdleTimeout();
+      checkForGlitchTimeout();
       break;
     case GORDON:
       checkForGlitchTimeout();
@@ -257,11 +260,9 @@ void loop() {
 
 
 void inputPollingLoop() {
-
   buttonLoop();
   modeSwitchLoop();
   radioTuningWheelLoop();
-
 }
 
 
@@ -326,15 +327,10 @@ void modeSwitchLoop() {
 
 void radioTuningWheelLoop() {
 
-  if (clockState != RADIO_MODE) {
-    //muteRadio();         //TESTING
-    fade1.fadeOut(200);
-    return;
-  }
-  else if (clockState == RADIO_MODE) {
-    //mixer1.gain(1, 0.5); //TESTING
-    fade1.fadeIn(200);
-  }
+  // if (clockState != RADIO_MODE) {
+  //   muteRadio();
+  //   return;
+  // }
 
   // Only change state if value has changed by a determined amount
   long newTunerPosition;
@@ -349,11 +345,20 @@ void radioTuningWheelLoop() {
   // return;
   // // -----------
 
+
   if (newTunerPosition != tunerPosition) {
 
+    //Serial.print(tunerPosition); Serial.print(" "); Serial.println(newTunerPosition);
+
+      if (newTunerPosition > tunerPosition+1 || newTunerPosition < tunerPosition-1) {
+        if (clockState != RADIO_MODE && toggleSwitchState == RADIO_SWITCH_STATE && radioTimedOut) {
+          setState(RADIO_MODE);
+        }
+      }
+
+
     //setState(RADIO_MODE);
-    idleTimeoutTime = tunerModeTimeoutTime;
-    idleTimeoutTimer = 0;
+    radioTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
     if(tunerPosition < 0) {
@@ -455,6 +460,14 @@ void audioLoop() {
 
 void radioStateLoop() {
   if (clockState == RADIO_MODE) {
+
+    if (radioTimeoutTimer >= radioTimeoutTime) {
+      radioTimedOut = true;
+      setState(IDLE);
+      return;
+    }
+
+
     if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
       vuMeterRefreshTimer = 0;
@@ -490,6 +503,19 @@ void setState(ClockState newClockState) {
   // if (newClockState == clockState) {
   //   return;
   // }
+  if (clockState == RADIO_MODE && newClockState != RADIO_MODE) {
+    muteRadio();
+    clearPixels();
+  }
+
+  if (clockState == GLITCH && newClockState != GLITCH) {
+    playMem1.stop();
+    stopPixelSequencer();
+    display.clear();
+  }
+
+  // stopPixelSequencer();
+  // display.clear();
 
   clockState = newClockState;
 
@@ -574,65 +600,101 @@ void startIdle() {
 
 void startGlitch() {
   glitchTimer = 0;
+  glitchTimeoutTime = defaultGlitchTimeoutTime;
   idleTimeoutTimer = 0;
   idleTimeoutTime = defaultIdleTimeoutTime;
-  glitchTimeoutTime = defaultGlitchTimeoutTime;
   display.playGlitchAnimation();
   triggerGlitchFlash();
+  mixer2.gain(1, 1.5); // Glitch Sample
   playMem1.play(GlitchSample);
 }
 
 
 void startSleep() {
+  stopPixelSequencer();
+  display.clear();
+
   display.playSleepAnimation();
 }
 
 
 void startWake() {
+  stopPixelSequencer();
+  display.clear();
+
   display.playWakeAnimation();
 }
 
 void startHour() {
+  stopPixelSequencer();
+  display.clear();
+
   display.playHourAnimation();
 }
 
 
 void startMinute() {
+  stopPixelSequencer();
+  display.clear();
+
   display.playMinuteAnimation();
 }
 
 
 void startSnooz() {
-  triggerRedStreak();
-  display.playRedStreak();
+  stopPixelSequencer();
+  display.clear();
+
+  if (snoozDirectionToggle) {
+    triggerReverseRedStreak();
+    display.playReverseRedStreak();
+  }
+  else {
+    triggerRedStreak();
+    display.playRedStreak();
+  }
+
+  snoozDirectionToggle = !snoozDirectionToggle;
 }
 
 
 void startOnMode() {
   idleTimeoutTimer = 0;
-  idleTimeoutTime = defaultIdleTimeoutTime;
+  idleTimeoutTime = fiveSeconds;
+  //triggerGreenStrobe();
+  triggerWhiteStrobe();
+  display.playOnStrobeAnimation();
 }
 
 
 void startOffMode() {
-  idleTimeoutTimer = 0;
-  idleTimeoutTime = thirtySeconds;
+  glitchTimer = 0;
+  glitchTimeoutTime = fiveSeconds;
   stopPixelSequencer();
-  display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
+  display.clear();
+  display.scrollString("      byE               ");
+  //display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
   // display.displayString("AT[]m");
   // display.displayString("A@#m");
 }
 
 
 void startRadioMode() {
-  idleTimeoutTimer = 0;
-  idleTimeoutTime = defaultIdleTimeoutTime;
+  radioTimeoutTimer = 0;
+  radioTimedOut = false;
+  unmuteRadio();
+  stopPixelSequencer();
 }
 
 
 void startAlarmMode() {
-  idleTimeoutTimer = 0;
-  idleTimeoutTime = defaultIdleTimeoutTime;
+  glitchTimer = 0;
+  glitchTimeoutTime = tenSeconds;
+
+  //playMem1.play(gordonLikesThatSample);
+  triggerPoliceLights();
+  display.displayInt(911);
+  display.blink(true);
 }
 
 
@@ -642,15 +704,20 @@ void startGordon() {
   idleTimeoutTime = defaultIdleTimeoutTime;
   glitchTimeoutTime = tenSeconds;
 
+  mixer2.gain(1, 1.0); // Gordon Sample
   playMem1.play(gordonLikesThatSample);
   triggerPoliceLights();
-  display.displayInt(911);
-  display.blink(true);
+  display.scrollString("gOrdon LIKES tHAt");
 }
 
 
 void startFileNotFound() {
-
+  glitchTimer = 0;
+  idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+  glitchTimeoutTime = tenSeconds;
+  display.displayInt(404);
+  display.blink(true);
 }
 
 
@@ -698,10 +765,8 @@ bool checkForStateMatch() {
 
 void muteRadio() {
   fade1.fadeOut(200);
-  // #ifdef ARDUINO_TEENSY41
-  //   mixer1.gain(0, 0.0);
-  //   mixer1.gain(1, 0.0);
-  //   mixer1.gain(2, 0.0);
-  //   mixer1.gain(3, 0.0);
-  // #endif
+}
+
+void unmuteRadio() {
+  fade1.fadeIn(200);
 }
