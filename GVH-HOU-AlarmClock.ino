@@ -6,6 +6,7 @@
 #include <Bounce2.h>
 #include <Adafruit_NeoPixel.h>
 #include "GordonSample.h"
+#include "GlitchSample.h"
 
 #include <Encoder.h>
 
@@ -49,13 +50,13 @@ AudioConnection c3(playWav2, 0, mixer1, 2);
 AudioConnection c4(playWav3, 0, mixer1, 3);
 AudioConnection c5(mixer1, fade1);
 AudioConnection c6(fade1, 0, mixer2, 0);
-AudioConnection c7(playMem1, 0, mixer2, 1);
+AudioConnection c7(multiply1, 0, mixer2, 1);
 AudioConnection c8(mixer1, peak1);
 AudioConnection c9(mixer2, 0, filter1, 0);
 AudioConnection c10(filter1, 2, headphones, 0);
 AudioConnection c11(filter1, 2, headphones, 1);
-AudioConnection          c12(waveform1, 0, multiply1, 1);
-AudioConnection          c13(playMem1, 0, multiply1, 0);
+AudioConnection c12(waveform1, 0, multiply1, 1);
+AudioConnection c13(playMem1, 0, multiply1, 0);
 
 
 // Peripheral Devies
@@ -89,18 +90,19 @@ elapsedMillis modeSwitchPollTimer;
 
 
 // Consts
-const unsigned int oneMinutes = 60000;
-const unsigned int tenMinutes = 600000;
-const unsigned int fourMinutes = 240000;
+const unsigned int fiveSeconds = 5000;
+const unsigned int tenSeconds = 10000;
+const unsigned int fifteenSeconds = 15000;
 const unsigned int thirtySeconds = 30000;
+const unsigned int oneMinutes = 60000;
+const unsigned int fourMinutes = 240000;
+const unsigned int tenMinutes = 600000;
+const unsigned int thirtyMinutes = 1800000;
 
 const int defaultIdleTimeoutTime = 5000;
-const int defaultGlitchTimeoutTime = 30000;
+const int defaultGlitchTimeoutTime = 240000;
 long unsigned int tunerModeTimeoutTime = 3000;
-//long unsigned int glitchTimeoutTime = 600000; // 10 min
-//long unsigned int glitchTimeoutTime = 240000;  // 4 min
-//long unsigned int glitchTimeoutTime = 60000; // 1 min
-long unsigned int glitchTimeoutTime = 30000; // 30 sec
+long unsigned int glitchTimeoutTime = 240000; // 4 min
 const int vuMeterRefreshRate = 42;
 long unsigned const int modeSwitchPollRate = 1;
 
@@ -185,7 +187,7 @@ void setup() {
 
   noise1.amplitude(0.5);
 
-  waveform1.begin(1, 1000, WAVEFORM_SINE);
+  waveform1.begin(0.2, 1000, WAVEFORM_SINE);
 
   delay(1000);
 
@@ -243,6 +245,10 @@ void loop() {
     case ALARM_MODE:
       checkForIdleTimeout();
       break;
+    case GORDON:
+      checkForGlitchTimeout();
+      break;
+    case FILE_NOT_FOUND:
     default:
       checkForIdleTimeout();
       break;
@@ -455,7 +461,7 @@ void radioStateLoop() {
 
       if (peak1.available()) {
         //uint8_t peakScaled = peak1.read() * 70.0;
-        uint8_t peakScaled = peak1.read()*15;
+        uint8_t peakScaled = peak1.read()*14;
         display.setVuMeter(peakScaled);
         setPixelVUMeter(peakScaled);
 
@@ -481,9 +487,9 @@ void checkForGlitchTimeout() {
 
 void setState(ClockState newClockState) {
 
-  if (newClockState == clockState) {
-    return;
-  }
+  // if (newClockState == clockState) {
+  //   return;
+  // }
 
   clockState = newClockState;
 
@@ -536,7 +542,14 @@ void setState(ClockState newClockState) {
       startAlarmMode();
       stateString = "Alarm";
       break;
+    case GORDON:
+      startGordon();
+      stateString = "Gordon";
+      break;
+    case FILE_NOT_FOUND:
     default:
+      startFileNotFound();
+      stateString = "404 - File Not Found";
       break;
   }
   Serial.print("Clock State = ");
@@ -545,9 +558,7 @@ void setState(ClockState newClockState) {
 
   updateStateHistory();
   if (checkForStateMatch()) {
-    triggerPoliceLights();
-    display.displayInt(911);
-    display.blink(true);
+    setState(GORDON);
   }
 }
 
@@ -568,12 +579,12 @@ void startGlitch() {
   glitchTimeoutTime = defaultGlitchTimeoutTime;
   display.playGlitchAnimation();
   triggerGlitchFlash();
+  playMem1.play(GlitchSample);
 }
 
 
 void startSleep() {
   display.playSleepAnimation();
-  triggerBlueNightRider();
 }
 
 
@@ -587,7 +598,7 @@ void startHour() {
 
 
 void startMinute() {
-  display.playMiniuteAnimation();
+  display.playMinuteAnimation();
 }
 
 
@@ -599,12 +610,14 @@ void startSnooz() {
 
 void startOnMode() {
   idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
 }
 
 
 void startOffMode() {
   idleTimeoutTimer = 0;
-  idleTimeoutTime = defaultIdleTimeoutTime;
+  idleTimeoutTime = thirtySeconds;
+  stopPixelSequencer();
   display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
   // display.displayString("AT[]m");
   // display.displayString("A@#m");
@@ -613,11 +626,31 @@ void startOffMode() {
 
 void startRadioMode() {
   idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
 }
 
 
 void startAlarmMode() {
   idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+}
+
+
+void startGordon() {
+  glitchTimer = 0;
+  idleTimeoutTimer = 0;
+  idleTimeoutTime = defaultIdleTimeoutTime;
+  glitchTimeoutTime = tenSeconds;
+
+  playMem1.play(gordonLikesThatSample);
+  triggerPoliceLights();
+  display.displayInt(911);
+  display.blink(true);
+}
+
+
+void startFileNotFound() {
+
 }
 
 
@@ -658,7 +691,6 @@ bool checkForStateMatch() {
         return false;
     }
   }
-  playMem1.play(gordonLikesThatSample);
   Serial.println("MATCH!!");
   return true;
 }

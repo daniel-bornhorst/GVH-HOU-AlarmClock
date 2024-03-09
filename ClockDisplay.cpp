@@ -242,7 +242,6 @@ void ClockDisplay::scriptedAnimationLoop(bool newAnimation) {
       
       // If the end of a one shot is reached go back to idle animation
       if ((_currentAnimation[_frameIndex].controlBits & ONE_SHOT) != 0) {
-        //playIdleAnimation();
         _animationRunning = false;
         return;
       }

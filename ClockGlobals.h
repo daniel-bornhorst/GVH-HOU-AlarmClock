@@ -17,7 +17,9 @@ typedef enum ClockState
   ON_MODE,
   OFF_MODE,
   RADIO_MODE,
-  ALARM_MODE
+  ALARM_MODE,
+  GORDON,
+  FILE_NOT_FOUND
 } clock_state_;
 
 // Represents the available user inputs on the clock
