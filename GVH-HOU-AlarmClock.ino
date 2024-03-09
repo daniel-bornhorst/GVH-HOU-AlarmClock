@@ -87,6 +87,7 @@ elapsedMillis idleTimeoutTimer;
 elapsedMillis vuMeterRefreshTimer;
 elapsedMillis glitchTimer;
 elapsedMillis modeSwitchPollTimer;
+elapsedMillis tuningWheelPollTimer;
 elapsedMillis radioTimeoutTimer;
 
 
@@ -102,10 +103,11 @@ const unsigned int thirtyMinutes = 1800000;
 
 const int defaultIdleTimeoutTime = fiveSeconds;
 const int defaultGlitchTimeoutTime = fourMinutes;
-long unsigned int radioTimeoutTime = fiveSeconds;
+long unsigned int radioTimeoutTime = thirtySeconds;
 long unsigned int glitchTimeoutTime = fourMinutes; // 4 min
 const int vuMeterRefreshRate = 42;
-long unsigned const int modeSwitchPollRate = 1;
+long unsigned const int modeSwitchPollRate = 5;
+long unsigned const int tuningWheelPollRate = 10;
 
 
 // Variables
@@ -207,9 +209,9 @@ void loop() {
 
   if (clockState != SIMPLE_MODE) {
     display.loop();
+    pixelLoop();
     inputPollingLoop();
     audioLoop();
-    pixelLoop();
   }
 
   switch (clockState) {
@@ -327,15 +329,16 @@ void modeSwitchLoop() {
 
 void radioTuningWheelLoop() {
 
-  // if (clockState != RADIO_MODE) {
-  //   muteRadio();
-  //   return;
-  // }
+  //if (clockState != RADIO_MODE) {
+  if (tuningWheelPollTimer < tuningWheelPollRate) {
+    //muteRadio();
+    return;
+  }
 
   // Only change state if value has changed by a determined amount
   long newTunerPosition;
   magneticSensor.updateData();
-  delay(10);
+  //delay(10);
   rawY = magneticSensor.getAzimuth();
   cookedY = 0.85 * cookedY + 0.15 * rawY;
   newTunerPosition = round((cookedY*10)+25);
@@ -435,6 +438,8 @@ void radioTuningWheelLoop() {
     // Serial.println(gainRadio);
     // Serial.println(tunerPosition);
   }
+
+  tuningWheelPollTimer = 0;
 }
 
 
@@ -600,12 +605,12 @@ void startIdle() {
 
 void startGlitch() {
   glitchTimer = 0;
-  glitchTimeoutTime = defaultGlitchTimeoutTime;
   idleTimeoutTimer = 0;
   idleTimeoutTime = defaultIdleTimeoutTime;
+  glitchTimeoutTime = defaultGlitchTimeoutTime;
   display.playGlitchAnimation();
   triggerGlitchFlash();
-  mixer2.gain(1, 1.5); // Glitch Sample
+  mixer2.gain(1, 3); // Glitch Sample
   playMem1.play(GlitchSample);
 }
 
@@ -672,7 +677,7 @@ void startOffMode() {
   glitchTimeoutTime = fiveSeconds;
   stopPixelSequencer();
   display.clear();
-  display.scrollString("      byE               ");
+  display.scrollString("   byE               ");
   //display.scrollString("drink reCIpe -   3 gender fluid     press 2 - hydro bang");
   // display.displayString("AT[]m");
   // display.displayString("A@#m");
