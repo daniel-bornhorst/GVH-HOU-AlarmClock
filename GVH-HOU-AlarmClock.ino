@@ -1,7 +1,7 @@
-#define _DEBUG
 
-#include "ClockDisplay.h"
+
 #include "ClockGlobals.h"
+#include "ClockDisplay.h"
 #include "elapsedMillis.h"
 #include <Bounce2.h>
 #include <Adafruit_NeoPixel.h>
@@ -116,14 +116,18 @@ long tunerPosition = 0;
 ClockState stateHistory[10];
 bool snoozDirectionToggle = true;
 bool radioTimedOut = false;
+uint8_t snoozQueueIndex = 0;
+int stateChangeCount = 0;
+uint8_t stateChangeSinceGlitch = 0;
 
 
 void setup() {
 
   // Serial
   Serial.begin(9600);
-  delay(1000);
+  delay(200);
 
+  DEBUG_PRINT("Clock boot sequence initiated");
   magneticSensor.begin();
 
   // Button Setup
@@ -165,7 +169,7 @@ void setup() {
 
   pixelSetup();
 
-  delay(1000);
+  delay(200);
   
   // Audio Setup
   AudioMemory(10);
@@ -182,19 +186,19 @@ void setup() {
   fade1.fadeOut(10);
 
   playWav1.play("ETNL.WAV");
-  delay(1000);
+  delay(200);
   
   playWav2.play("LUCIUS.WAV");
-  delay(1000);
+  delay(200);
 
   playWav3.play("NUMBERS.WAV");
-  delay(1000);
+  delay(200);
 
   noise1.amplitude(0.5);
 
   waveform1.begin(0.2, 1000, WAVEFORM_SINE);
 
-  delay(1000);
+  delay(200);
 
   // Simple Mode Check
   // Start in simple mode unless these three buttons are held during boot
@@ -224,19 +228,20 @@ void loop() {
       if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case SLEEP:
-      if (!display.isAnimationRunning()) setState(GLITCH);
+      if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case WAKE:
-      if (!display.isAnimationRunning()) setState(GLITCH);
+      if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case HOUR:
-      if (!display.isAnimationRunning()) setState(GLITCH);
+      if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case MINUTE:
-      if (!display.isAnimationRunning()) setState(GLITCH);
+      if (!display.isAnimationRunning()) setState(IDLE);
       break;
     case SNOOZ:
       if (!display.isAnimationRunning() && !isPixelSequenceRunning()) setState(IDLE);
+      //checkForIdleTimeout();
       break;
     case ON_MODE:
       checkForIdleTimeout();
@@ -296,7 +301,7 @@ void modeSwitchLoop() {
 
   // Check The Mode Switch at an interval
   if (modeSwitchPollTimer >= modeSwitchPollRate) {
-    ToggleSwitchState newSwitchState;
+    ToggleSwitchState newSwitchState = NO_SWITCH_STATE;
 
     if (digitalRead(ON_SWITCH) == 0) {
       newSwitchState = ON_SWITCH_STATE;
@@ -353,7 +358,7 @@ void radioTuningWheelLoop() {
 
     //Serial.print(tunerPosition); Serial.print(" "); Serial.println(newTunerPosition);
 
-      if (newTunerPosition > tunerPosition+1 || newTunerPosition < tunerPosition-1) {
+      if (newTunerPosition > tunerPosition+3 || newTunerPosition < tunerPosition-3) {
         if (clockState != RADIO_MODE && toggleSwitchState == RADIO_SWITCH_STATE && radioTimedOut) {
           setState(RADIO_MODE);
         }
@@ -446,17 +451,17 @@ void radioTuningWheelLoop() {
 void audioLoop() {
   // Restart Audio Loops if they have reached the end of the file
   if (playWav1.isPlaying() == false) {
-    Serial.println("Start playing 1");
+    DEBUG_PRINTLN("Start playing 1");
     playWav1.play("ETNL.WAV");
     delay(10); // wait for library to parse WAV info
   }
   if (playWav2.isPlaying() == false) {
-    Serial.println("Start playing 2");
+    DEBUG_PRINTLN("Start playing 2");
     playWav2.play("LUCIUS.WAV");
     delay(10); // wait for library to parse WAV info
   }
   if (playWav3.isPlaying() == false) {
-    Serial.println("Start playing 3");
+    DEBUG_PRINTLN("Start playing 3");
     playWav3.play("NUMBERS.WAV");
     delay(10); // wait for library to parse WAV info
   }
@@ -583,13 +588,15 @@ void setState(ClockState newClockState) {
       stateString = "404 - File Not Found";
       break;
   }
-  Serial.print("Clock State = ");
-  Serial.print(stateString);
-  Serial.println();
+  DEBUG_PRINT("Clock State = ");
+  DEBUG_PRINTLN(stateString);
 
   updateStateHistory();
-  if (checkForStateMatch()) {
+  if (checkForGordonCodeMatch()) {
     setState(GORDON);
+  }
+  else if (checkForRebootCodeMatch()) {
+    doReboot();
   }
 }
 
@@ -650,6 +657,9 @@ void startSnooz() {
   stopPixelSequencer();
   display.clear();
 
+  idleTimeoutTimer = 0;
+  idleTimeoutTime = fiveSeconds;
+
   if (snoozDirectionToggle) {
     triggerReverseRedStreak();
     display.playReverseRedStreak();
@@ -658,6 +668,8 @@ void startSnooz() {
     triggerRedStreak();
     display.playRedStreak();
   }
+  // if (snoozQueueIndex >= 4) snoozQueueIndex = 0;
+  // display.playSnoozQueueAnimation(snoozQueueIndex++);
 
   snoozDirectionToggle = !snoozDirectionToggle;
 }
@@ -696,9 +708,8 @@ void startAlarmMode() {
   glitchTimer = 0;
   glitchTimeoutTime = tenSeconds;
 
-  //playMem1.play(gordonLikesThatSample);
-  triggerPoliceLights();
-  display.displayInt(911);
+  triggerAlertLights();
+  display.displayString("aLrt  ");
   display.blink(true);
 }
 
@@ -727,28 +738,33 @@ void startFileNotFound() {
 
 
 void updateStateHistory() {
+
+  stateChangeCount++;
+
   for (int i = 9; i >= 1; --i) {
     stateHistory[i] = stateHistory[i-1];
   }
 
   stateHistory[0] = clockState;
 
-  Serial.print("StateHistory: ");
+  #ifdef DEBUG
+  DEBUG_PRINT("StateHistory: ");
 
   for (int i = 0; i < 10; ++i) {
-    Serial.print(stateHistory[i]);
+    DEBUG_PRINT(stateHistory[i]);
 
     if (i < 9) {
-      Serial.print(", ");
+      DEBUG_PRINT(", ");
     }
   }
 
-  Serial.println();
+  DEBUG_PRINTLN("");
+  #endif
 }
 
 
 // Returns true if a pattern matches
-bool checkForStateMatch() {
+bool checkForGordonCodeMatch() {
   for (int i = 0; i < 8; ++i) {
     switch (i) {
       case 0: if(stateHistory[0] == SLEEP  ) { break; } else { return false; }
@@ -763,7 +779,25 @@ bool checkForStateMatch() {
         return false;
     }
   }
-  Serial.println("MATCH!!");
+  DEBUG_PRINTLN("-- Gordon Likes That Match --");
+  return true;
+}
+
+
+bool checkForRebootCodeMatch() {
+  for (int i = 0; i < 6; ++i) {
+    switch (i) {
+      case 0: if(stateHistory[0] == OFF_MODE  ) { break; } else { return false; }
+      case 1: if(stateHistory[1] == MINUTE  ) { break; } else { return false; }
+      case 2: if(stateHistory[2] == HOUR ) { break; } else { return false; }
+      case 3: if(stateHistory[3] == WAKE ) { break; } else { return false; }
+      case 4: if(stateHistory[4] == SLEEP   ) { break; } else { return false; }
+      case 5: if(stateHistory[5] == ON_MODE ) { break; } else { return false; }
+      default: 
+        return false;
+    }
+  }
+  DEBUG_PRINTLN("-- Reboot Match --");
   return true;
 }
 
@@ -772,6 +806,12 @@ void muteRadio() {
   fade1.fadeOut(200);
 }
 
+
 void unmuteRadio() {
   fade1.fadeIn(200);
+}
+
+
+void doReboot() {
+  SCB_AIRCR = 0x05FA0004;
 }

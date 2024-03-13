@@ -50,49 +50,49 @@ void ClockDisplay::loop() {
 
 void ClockDisplay::playIdleAnimation() {
   loadAnimation(sevenOhSixThrob);
-  Serial.println("Load Animation: IDLE");
+  DEBUG_PRINTLN("Load Animation: IDLE");
 }
 
 
 void ClockDisplay::playGlitchAnimation() {
   loadAnimation(sevenOhSixGlitch);
-  Serial.println("Load Animation: gLiTcH");
+  DEBUG_PRINTLN("Load Animation: gLiTcH");
 }
 
 
 void ClockDisplay::playSleepAnimation() {
   loadAnimation(sleepAnimationWithRandom);
-  Serial.println("Load Animation: Sleep");
+  DEBUG_PRINTLN("Load Animation: Sleep");
 }
 
 
 void ClockDisplay::playWakeAnimation() {
   loadAnimation(sevenOhSixWake);
-  Serial.println("Load Animation: Wake");
+  DEBUG_PRINTLN("Load Animation: Wake");
 }
 
 void ClockDisplay::playOnStrobeAnimation() {
   loadAnimation(onStrobe);
-  Serial.println("Load Animation: OnStrobe");
+  DEBUG_PRINTLN("Load Animation: OnStrobe");
 }
 
 
 void ClockDisplay::playHourAnimation() {
   //loadAnimation(middleOutWipe1);
   loadAnimation(sevenOhSixHour);
-  Serial.println("Load Animation: Hour");
+  DEBUG_PRINTLN("Load Animation: Hour");
 }
 
 
 void ClockDisplay::playMinuteAnimation() {
   loadAnimation(sevenOhSixMinute);
-  Serial.println("Load Animation: Minute");
+  DEBUG_PRINTLN("Load Animation: Minute");
 }
 
 
 void ClockDisplay::playSnoozAnimation() {
   loadAnimation(sevenOhSixSnooz);
-  Serial.println("Load Animation: Snooz");
+  DEBUG_PRINTLN("Load Animation: Snooz");
 }
 
 
@@ -114,21 +114,21 @@ void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
       break;
   }
 
-  Serial.print("Snooz Button ");
-  Serial.print(animationIndex);
-  Serial.println();
+  DEBUG_PRINT("Snooz Button ");
+  DEBUG_PRINT(animationIndex);
+  DEBUG_PRINTLN("");
 }
 
 
  void ClockDisplay::playRedStreak() {
   loadAnimation(diagonalWipe1);
-  Serial.println("Load Animation: RED STREEEEK");
+  DEBUG_PRINTLN("Load Animation: RED STREEEEK");
  }
 
 
  void ClockDisplay::playReverseRedStreak() {
   loadAnimation(reverserRedStreak);
-  Serial.println("Load Animation: ReVeRSE RED STREEEEK");
+  DEBUG_PRINTLN("Load Animation: ReVeRSE RED STREEEEK");
  }
 
 

@@ -1,7 +1,16 @@
 #ifndef ClockGlobals_h
 #define ClockGlobals_h
 
-//#define ARDUINO_TEENSY41 1
+//#define DEBUG 1
+
+#ifdef DEBUG
+# define DEBUG_PRINTLN(x) Serial.println(x);
+# define DEBUG_PRINT(x) Serial.print(x);
+#else
+# define DEBUG_PRINTLN(x) do {} while (0)
+# define DEBUG_PRINT(x) do {} while (0)
+#endif
+
 
 typedef enum ClockState
 {
