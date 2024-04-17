@@ -121,7 +121,7 @@ void ClockDisplay::playSnoozQueueAnimation(int animationIndex) {
 
 
  void ClockDisplay::playRedStreak() {
-  loadAnimation(diagonalWipe1);
+  loadAnimation(redderStreak);
   DEBUG_PRINTLN("Load Animation: RED STREEEEK");
  }
 

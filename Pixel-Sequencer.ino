@@ -1,6 +1,10 @@
 
+#ifdef PROTO
+#define PIXEL_PIN            32  // Define the pin to which your NeoPixel strip is connected
+#else
+#define PIXEL_PIN            5   // Pin used for v1 of the clock
+#endif
 
-#define PIN            5  // Define the pin to which your NeoPixel strip is connected
 #define NUMPIXELS      8 // Number of NeoPixels in the strip
 
 #define DEFAULT_FRAME_TIME 42 // 42 is close to 24fps
@@ -225,7 +229,7 @@ uint8_t _pixelBuffer[8][4];
 
 elapsedMillis _frameTimer;
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, PIXEL_PIN, NEO_GRBW + NEO_KHZ800);
 
 void pixelSetup() {
   strip.begin();
@@ -349,7 +353,7 @@ void setPixelVUMeter(uint8_t level) {
   clearPixels();
   for (int i = 0; i < NUMPIXELS; i++) {
     if (i < level) {
-      strip.setPixelColor(NUMPIXELS-1-i, strip.Color(255, 0, 255, 0));  // Set color to red (adjust as needed)
+      strip.setPixelColor(NUMPIXELS-1-i, strip.Color(100, 0, 50, 0));  // Set color to red (adjust as needed)
     }
     else {
       break;

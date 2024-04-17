@@ -1,4 +1,4 @@
-
+//#define PROTO 1
 
 #include "ClockGlobals.h"
 #include "ClockDisplay.h"
@@ -23,7 +23,7 @@
 
 
 typedef struct {
-  uint8_t pixelData[8][4];  // Segment index 2 is the colon ':' on this display
+  uint8_t pixelData[8][4];
   unsigned long holdTime; // in milliseconds
   uint8_t controlBits;
 } PixelFrame;
@@ -44,6 +44,10 @@ AudioSynthWaveform       waveform1;
 AudioEffectMultiply      multiply1;
 AudioFilterStateVariable filter1;
 AudioOutputI2S2 headphones;
+
+// AudioSynthToneSweep      tonesweep1;
+// AudioSynthWaveformSineModulated sine_fm1;
+
 AudioConnection c1(noise1, 0, mixer1, 0);
 AudioConnection c2(playWav1, 0, mixer1, 1);
 AudioConnection c3(playWav2, 0, mixer1, 2);
@@ -57,6 +61,8 @@ AudioConnection c10(filter1, 2, headphones, 0);
 AudioConnection c11(filter1, 2, headphones, 1);
 AudioConnection c12(waveform1, 0, multiply1, 1);
 AudioConnection c13(playMem1, 0, multiply1, 0);
+// AudioConnection C14(tonesweep1, sine_fm1);
+// AudioConnection C15(sine_fm1, 0, mixer2, 2);
 
 
 // Peripheral Devies
@@ -103,7 +109,7 @@ const unsigned int thirtyMinutes = 1800000;
 
 const int defaultIdleTimeoutTime = fiveSeconds;
 const int defaultGlitchTimeoutTime = fourMinutes;
-long unsigned int radioTimeoutTime = thirtySeconds;
+long unsigned int radioTimeoutTime = oneMinute;
 long unsigned int glitchTimeoutTime = fourMinutes; // 4 min
 const int vuMeterRefreshRate = 42;
 long unsigned const int modeSwitchPollRate = 5;
@@ -119,6 +125,7 @@ bool radioTimedOut = false;
 uint8_t snoozQueueIndex = 0;
 int stateChangeCount = 0;
 uint8_t stateChangeSinceGlitch = 0;
+bool firstSetModeSwitch = true;
 
 
 void setup() {
@@ -127,8 +134,10 @@ void setup() {
   Serial.begin(9600);
   delay(200);
 
-  DEBUG_PRINT("Clock boot sequence initiated");
+  DEBUG_PRINTLN("Clock boot sequence initiated");
   magneticSensor.begin();
+  magneticSensor.setAccessMode(magneticSensor.FASTMODE);
+  magneticSensor.disableTemp();
 
   // Button Setup
   sleepButton.attach(SLEEP_BUTTON, INPUT_PULLUP);
@@ -180,6 +189,10 @@ void setup() {
   mixer1.gain(3, 0.0); // Number Stations
   mixer2.gain(0, 1.0); // Radio Mix
   mixer2.gain(1, 1.0); // Gordon Sample
+  //mixer2.gain(2, 0.0); // FM Sweep
+
+  // sine_fm1.amplitude(1.0);
+  // sine_fm1.frequency(400);
 
   filter1.frequency(1000.0);
 
@@ -207,6 +220,8 @@ void setup() {
   //   display.displayTime();
   //   Serial.println("WE IN SIMP MODE YO!");
   // }
+
+  DEBUG_PRINTLN("Clock boot sequence complete");
 }
 
 void loop() {
@@ -269,7 +284,9 @@ void loop() {
 void inputPollingLoop() {
   buttonLoop();
   modeSwitchLoop();
+  #ifndef PROTO
   radioTuningWheelLoop();
+  #endif
 }
 
 
@@ -318,6 +335,13 @@ void modeSwitchLoop() {
 
     if (toggleSwitchState != newSwitchState) {
       toggleSwitchState = newSwitchState;
+
+      if (firstSetModeSwitch) { // Read the switch position, do not set the state first time throught this loop.
+        modeSwitchPollTimer = 0;
+        firstSetModeSwitch = false;
+        return;
+      }
+
       switch(toggleSwitchState) {
         case ON_SWITCH_STATE: setState(ON_MODE); break;
         case OFF_SWITCH_STATE: setState(OFF_MODE); break;
@@ -334,39 +358,28 @@ void modeSwitchLoop() {
 
 void radioTuningWheelLoop() {
 
-  //if (clockState != RADIO_MODE) {
-  if (tuningWheelPollTimer < tuningWheelPollRate) {
-    //muteRadio();
+  if (clockState != RADIO_MODE) {
+    return;
+  }
+
+  if ( tuningWheelPollTimer < tuningWheelPollRate ) {
     return;
   }
 
   // Only change state if value has changed by a determined amount
   long newTunerPosition;
-  magneticSensor.updateData();
-  //delay(10);
+  int sensorError = magneticSensor.updateData();
+  if (sensorError > 0) {
+    DEBUG_PRINT("Sensor Error: ");
+    DEBUG_PRINTLN(sensorError);
+  }
+
   rawY = magneticSensor.getAzimuth();
   cookedY = 0.85 * cookedY + 0.15 * rawY;
   newTunerPosition = round((cookedY*10)+25);
-  //Serial.println(newTunerPosition);
-
-  // // FOR TESTING
-  // return;
-  // // -----------
-
 
   if (newTunerPosition != tunerPosition) {
 
-    //Serial.print(tunerPosition); Serial.print(" "); Serial.println(newTunerPosition);
-
-      if (newTunerPosition > tunerPosition+3 || newTunerPosition < tunerPosition-3) {
-        if (clockState != RADIO_MODE && toggleSwitchState == RADIO_SWITCH_STATE && radioTimedOut) {
-          setState(RADIO_MODE);
-        }
-      }
-
-
-    //setState(RADIO_MODE);
-    radioTimeoutTimer = 0;
 
     tunerPosition = newTunerPosition;
     if(tunerPosition < 0) {
@@ -385,6 +398,9 @@ void radioTuningWheelLoop() {
       gainRadio = (map(tunerPosition, 0, 8, 0, 100)/100.0);
       mixer1.gain(0, gainNoise);
       mixer1.gain(1, gainRadio);
+
+      mixer1.gain(2, 0);
+      mixer1.gain(3, 0);
     }
     else if (tunerPosition >= 9 && tunerPosition < 17) {
       //noise up, radio station 1 down
@@ -393,6 +409,9 @@ void radioTuningWheelLoop() {
 
       mixer1.gain(0, gainNoise);
       mixer1.gain(1, gainRadio);
+
+      mixer1.gain(2, 0);
+      mixer1.gain(3, 0);
     }
     else if (tunerPosition >= 17 && tunerPosition < 26) {
       //noise down, radio station 2 up
@@ -402,6 +421,9 @@ void radioTuningWheelLoop() {
       mixer1.gain(0, gainNoise);
       mixer1.gain(2, gainRadio);
 
+      mixer1.gain(1, 0);
+      mixer1.gain(3, 0);
+
     }
     else if (tunerPosition >= 26 && tunerPosition < 33) {
       //noise up, radio station 2 down
@@ -410,6 +432,9 @@ void radioTuningWheelLoop() {
 
       mixer1.gain(0, gainNoise);
       mixer1.gain(2, gainRadio);
+
+      mixer1.gain(1, 0);
+      mixer1.gain(3, 0);
     }
     else if (tunerPosition >= 33 && tunerPosition < 42) {
       //noise down, radio station 3 up
@@ -419,6 +444,9 @@ void radioTuningWheelLoop() {
       mixer1.gain(0, gainNoise);
       mixer1.gain(3, gainRadio);
 
+      mixer1.gain(1, 0);
+      mixer1.gain(2, 0);
+
     }
     else if (tunerPosition >= 42 && tunerPosition <= 50) {
       //noise up, radio station 3 down
@@ -427,6 +455,9 @@ void radioTuningWheelLoop() {
 
       mixer1.gain(0, gainNoise);
       mixer1.gain(3, gainRadio);
+
+      mixer1.gain(1, 0);
+      mixer1.gain(2, 0);
 
     }
     else {
@@ -451,17 +482,17 @@ void radioTuningWheelLoop() {
 void audioLoop() {
   // Restart Audio Loops if they have reached the end of the file
   if (playWav1.isPlaying() == false) {
-    DEBUG_PRINTLN("Start playing 1");
+    DEBUG_PRINTLN("Start playing ETNL.WAV");
     playWav1.play("ETNL.WAV");
     delay(10); // wait for library to parse WAV info
   }
   if (playWav2.isPlaying() == false) {
-    DEBUG_PRINTLN("Start playing 2");
+    DEBUG_PRINTLN("Start playing LUCIUS.WAV");
     playWav2.play("LUCIUS.WAV");
     delay(10); // wait for library to parse WAV info
   }
   if (playWav3.isPlaying() == false) {
-    DEBUG_PRINTLN("Start playing 3");
+    DEBUG_PRINTLN("Start playing NUMBERS.WAV");
     playWav3.play("NUMBERS.WAV");
     delay(10); // wait for library to parse WAV info
   }
@@ -469,26 +500,28 @@ void audioLoop() {
 
 
 void radioStateLoop() {
-  if (clockState == RADIO_MODE) {
+  if (clockState != RADIO_MODE) {
+    return;
+  }
 
-    if (radioTimeoutTimer >= radioTimeoutTime) {
-      radioTimedOut = true;
-      setState(IDLE);
-      return;
-    }
+  
+  if (radioTimeoutTimer >= radioTimeoutTime) {
+    radioTimedOut = true;
+    setState(IDLE);
+    return;
+  }
 
 
-    if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
+  if (vuMeterRefreshTimer >= vuMeterRefreshRate) {
 
-      vuMeterRefreshTimer = 0;
+    vuMeterRefreshTimer = 0;
 
-      if (peak1.available()) {
-        //uint8_t peakScaled = peak1.read() * 70.0;
-        uint8_t peakScaled = peak1.read()*14;
-        display.setVuMeter(peakScaled);
-        setPixelVUMeter(peakScaled);
+    if (peak1.available()) {
+      //uint8_t peakScaled = peak1.read() * 70.0;
+      uint8_t peakScaled = peak1.read()*14;
+      display.setVuMeter(peakScaled);
+      setPixelVUMeter(peakScaled);
 
-      }
     }
   }
 }
@@ -522,6 +555,7 @@ void setState(ClockState newClockState) {
     playMem1.stop();
     stopPixelSequencer();
     display.clear();
+    //doReboot();
   }
 
   // stopPixelSequencer();
@@ -602,6 +636,7 @@ void setState(ClockState newClockState) {
 
 
 void startIdle() {
+  //mixer2.gain(2, 0.0);
   glitchTimer = 0;
   idleTimeoutTime = defaultIdleTimeoutTime;
   display.playIdleAnimation();
@@ -650,6 +685,8 @@ void startMinute() {
   display.clear();
 
   display.playMinuteAnimation();
+  // mixer2.gain(2, .1);
+  // tonesweep1.play(1, 100, 1000, 15);
 }
 
 
