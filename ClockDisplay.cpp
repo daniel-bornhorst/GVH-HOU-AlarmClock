@@ -7,7 +7,7 @@ ClockDisplay::ClockDisplay() {
   _frameTimer = 0;
 
   _frameIndex = 0;
-  _currentAnimation = sevenOhSixThrob;
+  _currentAnimation = sevenOhSixBreath;
 }
 
 
@@ -49,7 +49,7 @@ void ClockDisplay::loop() {
 
 
 void ClockDisplay::playIdleAnimation() {
-  loadAnimation(sevenOhSixThrob);
+  loadAnimation(sevenOhSixBreath);
   DEBUG_PRINTLN("Load Animation: IDLE");
 }
 

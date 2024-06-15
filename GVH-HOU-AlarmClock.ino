@@ -824,10 +824,10 @@ bool checkForGordonCodeMatch() {
 bool checkForRebootCodeMatch() {
   for (int i = 0; i < 6; ++i) {
     switch (i) {
-      case 0: if(stateHistory[0] == OFF_MODE  ) { break; } else { return false; }
+      case 0: if(stateHistory[0] == OFF_MODE) { break; } else { return false; }
       case 1: if(stateHistory[1] == MINUTE  ) { break; } else { return false; }
-      case 2: if(stateHistory[2] == HOUR ) { break; } else { return false; }
-      case 3: if(stateHistory[3] == WAKE ) { break; } else { return false; }
+      case 2: if(stateHistory[2] == HOUR    ) { break; } else { return false; }
+      case 3: if(stateHistory[3] == WAKE    ) { break; } else { return false; }
       case 4: if(stateHistory[4] == SLEEP   ) { break; } else { return false; }
       case 5: if(stateHistory[5] == ON_MODE ) { break; } else { return false; }
       default: 
